@@ -80,62 +80,6 @@ C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Background\ba
 C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Background\front_panel.png
 C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Background\image_2.png
 C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Background\image_4.png
-C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\ч1.png
-C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\ч2.png
-C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\ч3.png
-C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\ч57.png
-C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\ч56.png
-C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\ч55.png
-C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\ч54.png
-C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\ч53.png
-C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\ч52.png
-C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\ч51.png
-C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\ч50.png
-C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\ч49.png
-C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\ч48.png
-C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\ч47.png
-C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\ч46.png
-C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\ч45.png
-C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\ч44.png
-C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\ч43.png
-C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\ч42.png
-C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\ч41.png
-C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\ч40.png
-C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\ч39.png
-C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\ч38.png
-C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\ч37.png
-C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\ч36.png
-C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\ч35.png
-C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\ч34.png
-C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\ч33.png
-C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\ч31.png
-C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\ч30.png
-C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\ч29.png
-C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\ч28.png
-C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\ч32.png
-C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\ч27.png
-C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\ч26.png
-C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\ч25.png
-C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\ч24.png
-C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\ч23.png
-C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\ч22.png
-C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\ч21.png
-C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\ч20.png
-C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\ч19.png
-C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\ч18.png
-C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\ч16.png
-C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\ч15.png
-C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\ч14.png
-C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\ч13.png
-C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\ч12.png
-C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\ч11.png
-C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\ч10.png
-C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\ч9.png
-C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\ч8.png
-C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\ч7.png
-C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\ч6.png
-C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\ч5.png
-C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\ч4.png
 C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\TheGatekeeper.exe.config
 C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\TheGatekeeper.exe
 C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\TheGatekeeper.pdb
@@ -146,3 +90,62 @@ C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\obj\Debug\TheGatekeeper.csproj
 C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\obj\Debug\TheGatekeeper.csproj.CoreCompileInputs.cache
 C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\obj\Debug\TheGatekeeper.exe
 C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\obj\Debug\TheGatekeeper.pdb
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\роботы\ч1.png
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\персонажи с сюжетом\ч2.png
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\роботы\ч3.png
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\персонажи\ч57.png
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\персонажи с сюжетом\ч56.png
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\персонажи\ч55.png
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\роботы\ч54.png
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\персонажи\ч53.png
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\персонажи с сюжетом\ч52.png
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\персонажи с сюжетом\ч51.png
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\персонажи\ч50.png
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\персонажи с сюжетом\ч49.png
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\персонажи с сюжетом\ч48.png
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\персонажи с сюжетом\ч47.png
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\персонажи с сюжетом\ч46.png
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\персонажи\ч45.png
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\инопланетяне\ч44.png
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\персонажи\ч43.png
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\персонажи с сюжетом\ч42.png
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\персонажи\ч41.png
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\персонажи\ч40.png
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\персонажи\ч39.png
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\персонажи\ч38.png
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\инопланетяне\ч37.png
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\персонажи с сюжетом\ч36.png
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\персонажи\ч35.png
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\персонажи\ч34.png
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\персонажи\ч33.png
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\персонажи\ч31.png
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\персонажи с сюжетом\ч30.png
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\персонажи с сюжетом\ч29.png
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\инопланетяне\ч28.png
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\персонажи\ч32.png
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\роботы\ч27.png
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\персонажи\ч26.png
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\персонажи\ч25.png
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\персонажи с сюжетом\ч24.png
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\персонажи\ч23.png
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\инопланетяне\ч22.png
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\персонажи\ч21.png
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\персонажи\ч20.png
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\персонажи\ч19.png
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\персонажи\ч18.png
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\персонажи\ч16.png
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\персонажи с сюжетом\ч15.png
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\персонажи\ч14.png
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\персонажи\ч13.png
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\персонажи\ч12.png
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\персонажи\ч9.png
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\персонажи\ч8.png
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\роботы\ч7.png
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\персонажи\ч6.png
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\персонажи\ч5.png
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\персонажи\ч4.png
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\персонажи\character_02.png
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\персонажи\character_01.png
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Newtonsoft.Json.dll
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Newtonsoft.Json.xml
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\obj\Debug\TheGatek.1874EEC6.Up2Date

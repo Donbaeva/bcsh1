@@ -22,6 +22,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <GenerateSerializationAssemblies>Off</GenerateSerializationAssemblies>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -33,6 +34,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.13.0.4\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Runtime.Serialization" />
@@ -47,7 +51,14 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CharacterAI.cs" />
+    <Compile Include="ChecklistForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="DayContentManager.cs" />
+    <Compile Include="DaySummaryForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Form1.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -64,6 +75,7 @@
     <Compile Include="Models\RadioData.cs" />
     <Compile Include="Models\SaveData.cs" />
     <Compile Include="Models\StickerData.cs" />
+    <Compile Include="NoteManager.cs" />
     <Compile Include="OverlayManager.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -92,6 +104,7 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
@@ -105,7 +118,9 @@
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="Images\Characters\люди\" />
+  </ItemGroup>
   <ItemGroup>
     <Content Include="Images\Background\buttons_default.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
@@ -131,172 +146,172 @@
     <Content Include="Images\Background\image_4.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\ч1.png">
+    <Content Include="Images\Characters\роботы\ч1.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\ч2.png">
+    <Content Include="Images\Characters\персонажи с сюжетом\ч2.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\ч3.png">
+    <Content Include="Images\Characters\роботы\ч3.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\ч57.png">
+    <Content Include="Images\Characters\персонажи\ч57.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\ч56.png">
+    <Content Include="Images\Characters\персонажи с сюжетом\ч56.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\ч55.png">
+    <Content Include="Images\Characters\персонажи\ч55.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\ч54.png">
+    <Content Include="Images\Characters\роботы\ч54.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\ч53.png">
+    <Content Include="Images\Characters\персонажи\ч53.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\ч52.png">
+    <Content Include="Images\Characters\персонажи с сюжетом\ч52.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\ч51.png">
+    <Content Include="Images\Characters\персонажи с сюжетом\ч51.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\ч50.png">
+    <Content Include="Images\Characters\персонажи\ч50.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\ч49.png">
+    <Content Include="Images\Characters\персонажи с сюжетом\ч49.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\ч48.png">
+    <Content Include="Images\Characters\персонажи с сюжетом\ч48.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\ч47.png">
+    <Content Include="Images\Characters\персонажи с сюжетом\ч47.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\ч46.png">
+    <Content Include="Images\Characters\персонажи с сюжетом\ч46.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\ч45.png">
+    <Content Include="Images\Characters\персонажи\ч45.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\ч44.png">
+    <Content Include="Images\Characters\инопланетяне\ч44.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\ч43.png">
+    <Content Include="Images\Characters\персонажи\ч43.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\ч42.png">
+    <Content Include="Images\Characters\персонажи с сюжетом\ч42.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\ч41.png">
+    <Content Include="Images\Characters\персонажи\ч41.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\ч40.png">
+    <Content Include="Images\Characters\персонажи\ч40.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\ч39.png">
+    <Content Include="Images\Characters\персонажи\ч39.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\ч38.png">
+    <Content Include="Images\Characters\персонажи\ч38.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\ч37.png">
+    <Content Include="Images\Characters\инопланетяне\ч37.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\ч36.png">
+    <Content Include="Images\Characters\персонажи с сюжетом\ч36.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\ч35.png">
+    <Content Include="Images\Characters\персонажи\ч35.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\ч34.png">
+    <Content Include="Images\Characters\персонажи\ч34.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\ч33.png">
+    <Content Include="Images\Characters\персонажи\ч33.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\ч31.png">
+    <Content Include="Images\Characters\персонажи\ч31.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\ч30.png">
+    <Content Include="Images\Characters\персонажи с сюжетом\ч30.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\ч29.png">
+    <Content Include="Images\Characters\персонажи с сюжетом\ч29.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\ч28.png">
+    <Content Include="Images\Characters\инопланетяне\ч28.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\ч32.png">
+    <Content Include="Images\Characters\персонажи\ч32.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\ч27.png">
+    <Content Include="Images\Characters\роботы\ч27.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\ч26.png">
+    <Content Include="Images\Characters\персонажи\ч26.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\ч25.png">
+    <Content Include="Images\Characters\персонажи\ч25.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\ч24.png">
+    <Content Include="Images\Characters\персонажи с сюжетом\ч24.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\ч23.png">
+    <Content Include="Images\Characters\персонажи\ч23.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\ч22.png">
+    <Content Include="Images\Characters\инопланетяне\ч22.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\ч21.png">
+    <Content Include="Images\Characters\персонажи\ч21.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\ч20.png">
+    <Content Include="Images\Characters\персонажи\ч20.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\ч19.png">
+    <Content Include="Images\Characters\персонажи\ч19.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\ч18.png">
+    <Content Include="Images\Characters\персонажи\ч18.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\ч16.png">
+    <Content Include="Images\Characters\персонажи\ч16.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\ч15.png">
+    <Content Include="Images\Characters\персонажи с сюжетом\ч15.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\ч14.png">
+    <Content Include="Images\Characters\персонажи\ч14.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\ч13.png">
+    <Content Include="Images\Characters\персонажи\ч13.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\ч12.png">
+    <Content Include="Images\Characters\персонажи\ч12.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\ч11.png">
+    <Content Include="Images\Characters\персонажи\character_02.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\ч10.png">
+    <Content Include="Images\Characters\персонажи\character_01.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\ч9.png">
+    <Content Include="Images\Characters\персонажи\ч9.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\ч8.png">
+    <Content Include="Images\Characters\персонажи\ч8.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\ч7.png">
+    <Content Include="Images\Characters\роботы\ч7.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\ч6.png">
+    <Content Include="Images\Characters\персонажи\ч6.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\ч5.png">
+    <Content Include="Images\Characters\персонажи\ч5.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\ч4.png">
+    <Content Include="Images\Characters\персонажи\ч4.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Sounds\Voices\alien.wav" />

@@ -6,6 +6,10 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using TheGatekeeper.Models;
+using TheGatekeeper.Models;
+using System.Threading.Tasks;
+
 
 namespace TheGatekeeper
 {
@@ -83,6 +87,11 @@ namespace TheGatekeeper
 
         public OverlayManager OverlayManagerInstance { get; private set; }
 
+        private List<Character> todayCast;
+        private Character currentCharacterData;
+        private int currentCharacterIndex = 0;
+
+
         // Секунды смены для часов
         private int shiftSeconds = 0;
         private Timer clockTimer;
@@ -91,6 +100,7 @@ namespace TheGatekeeper
         private Timer typingTimer;
         private string fullDialogueText = "";
         private int typingIndex = 0;
+        private List<(Character character, string decision)> dailyDecisions = new List<(Character character, string decision)>();
 
         private readonly Random rnd = new Random();
 
@@ -295,7 +305,25 @@ namespace TheGatekeeper
             LoadResources();
             CreateTransparentUI();
             CreateOverlay();
-            SpawnNewCharacter();
+            todayCast = CharacterFactory.GenerateMixedCast(
+    day,
+    guaranteedHumans: 1,      // 1 точно человек из папки "Люди"
+    guaranteedRobots: 0,
+    guaranteedAliens: 0,
+    randomTypeCount: 4        // 4 персонажа случайного типа из "Персонажи"
+);
+            currentCharacterIndex = 0;
+            LoadCurrentCharacter();
+            currentCharacterIndex++;
+
+            if (currentCharacterIndex < todayCast.Count)
+            {
+                LoadCurrentCharacter();
+            }
+            else
+            {
+                ShowDaySummary();
+            }
 
             shutterTimer = new Timer { Interval = 15 };
             shutterTimer.Tick += ShutterTimer_Tick;
@@ -552,11 +580,24 @@ namespace TheGatekeeper
             overlayPanel.BringToFront();
         }
 
+
         private void ShowOverlay(int index)
         {
-            if (index < 0 || index >= overlayData.Length) return;
-            overlayTitle.Text = overlayData[index].Title;
-            overlayBody.Text = overlayData[index].Body;
+            // Если кликнули по зоне стикера 1 (индекс 3 в вашем массиве interactiveZones)
+            if (index == 3)
+            {
+                using (var checklist = new ChecklistForm())
+                {
+                    checklist.ShowDialog(this);
+                }
+                return;
+            }
+
+            // Для остальных зон берем динамический текст
+            var note = NoteManager.GetDynamicNote(index, currentCharacterData);
+
+            overlayTitle.Text = note.Title;
+            overlayBody.Text = note.Body;
             overlayPanel.Visible = true;
             overlayPanel.BringToFront();
         }
@@ -569,27 +610,18 @@ namespace TheGatekeeper
         // ═══════════════════════════════════════════════════════════════════
         //  ПЕРСОНАЖ
         // ═══════════════════════════════════════════════════════════════════
-        private void SpawnNewCharacter()
+        private void LoadCurrentCharacter()
         {
-            try
-            {
-                string charPath = Path.Combine(Application.StartupPath, "Images", "Characters");
-                if (!Directory.Exists(charPath)) return;
+            if (todayCast == null || currentCharacterIndex >= todayCast.Count)
+                return;
 
-                string[] files = Directory.GetFiles(charPath, "*.*")
-                    .Where(f => f.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ||
-                                f.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase))
-                    .ToArray();
+            currentCharacterData = todayCast[currentCharacterIndex];
 
-                if (files.Length == 0) return;
+            currentCharacter?.Dispose();
+            currentCharacter = currentCharacterData.Photo;
 
-                currentCharacter?.Dispose();
-                currentCharacter = Image.FromFile(files[rnd.Next(files.Length)]);
-
-                lblName.Text = "SUBJECT AT TERMINAL";
-                StartTypingEffect("Subject approaching. Begin interrogation.");
-            }
-            catch { }
+            lblName.Text = currentCharacterData.Name;
+            StartTypingEffect(currentCharacterData.Dialogue);
         }
 
         // ═══════════════════════════════════════════════════════════════════
@@ -604,6 +636,7 @@ namespace TheGatekeeper
             typingTimer.Start();
         }
 
+
         private void TypingTimer_Tick(object sender, EventArgs e)
         {
             if (typingIndex < fullDialogueText.Length)
@@ -616,6 +649,7 @@ namespace TheGatekeeper
                 typingTimer.Stop();
             }
         }
+
 
         // ═══════════════════════════════════════════════════════════════════
         //  КЛИК МЫШИ
@@ -659,18 +693,21 @@ namespace TheGatekeeper
                 nextBtn = btnRed;
                 fColor = Color.Red;
                 decision = "ROBOT";
+                dailyDecisions.Add((currentCharacterData, decision));
             }
             else if (ScaleRect(blueZoneBase).Contains(p))
             {
                 nextBtn = btnBlue;
                 fColor = Color.DodgerBlue;
                 decision = "ALIEN";
+                dailyDecisions.Add((currentCharacterData, decision));
             }
             else if (ScaleRect(greenZoneBase).Contains(p))
             {
                 nextBtn = btnGreen;
                 fColor = Color.Lime;
                 decision = "HUMAN";
+                dailyDecisions.Add((currentCharacterData, decision));
             }
 
             if (nextBtn == null) return;
@@ -699,15 +736,14 @@ namespace TheGatekeeper
             isClosing = true;
             shutterTimer.Start();
         }
-        private void OpenCharacterDialogue()
-        {
-            ShowQuestionDialog();
-        }
+        private void OpenCharacterDialogue() => ShowQuestionDialog();
 
+        
         // ═══════════════════════════════════════════════════════════════════
-        //  ДИАЛОГ С ВОПРОСАМИ (РАЦИЯ)
+        //  ЗАМЕНИТЕ метод GenerateAnswer в Form1.cs на этот:
         // ═══════════════════════════════════════════════════════════════════
-        private void ShowQuestionDialog()
+
+        private async void ShowQuestionDialog()
         {
             var questionForm = new Form
             {
@@ -732,12 +768,12 @@ namespace TheGatekeeper
 
             var questions = new[]
             {
-                "What is your access code?",
-                "Where are you coming from?",
-                "What is your purpose here?",
-                "Do you have family?",
-                "How do you feel today?"
-            };
+        "What is your access code?",
+        "Where are you coming from?",
+        "What is your purpose here?",
+        "Do you have family?",
+        "How do you feel today?"
+    };
 
             int y = 60;
             foreach (var q in questions)
@@ -757,7 +793,7 @@ namespace TheGatekeeper
                 btn.Click += (s, e) =>
                 {
                     questionForm.Close();
-                    string answer = GenerateAnswer(q);
+                    string answer = CharacterAI.GenerateAnswer(currentCharacterData, q);
                     StartTypingEffect(answer);
                 };
                 questionForm.Controls.Add(btn);
@@ -766,26 +802,6 @@ namespace TheGatekeeper
 
             questionForm.Controls.Add(lblInfo);
             questionForm.ShowDialog(this);
-        }
-
-        private string GenerateAnswer(string question)
-        {
-            var answers = new Dictionary<string, string[]>
-            {
-                ["access code"] = new[] { "Alpha-7741-X", "Beta-3392-K", "I... don't remember the exact code", "We use collective clearance" },
-                ["coming from"] = new[] { "From the Alpha Zone", "Medical facility", "I came from... far away", "We travel from the outer regions" },
-                ["purpose"] = new[] { "Work assignment", "Medical checkup", "To deliver important data", "We seek to understand humans" },
-                ["family"] = new[] { "Yes, wife and two kids", "I live alone", "Family unit not... applicable", "We have no such concepts" },
-                ["feel"] = new[] { "A bit tired, but fine", "Nervous, honestly", "I do not experience feelings", "We feel collective harmony" }
-            };
-
-            foreach (var key in answers.Keys)
-            {
-                if (question.ToLower().Contains(key))
-                    return answers[key][rnd.Next(answers[key].Length)];
-            }
-
-            return "I don't understand the question.";
         }
 
         // ═══════════════════════════════════════════════════════════════════
@@ -799,7 +815,16 @@ namespace TheGatekeeper
                 if (shutterHeight >= shutterMaxHeight)
                 {
                     isClosing = false;
-                    SpawnNewCharacter();
+                    currentCharacterIndex++;
+
+                    if (currentCharacterIndex < todayCast.Count)
+                    {
+                        LoadCurrentCharacter();
+                    }
+                    else
+                    {
+                        ShowDaySummary();
+                    }
                     pressureSeconds = 0;
                     pressureTimer.Start();
                 }
@@ -849,25 +874,45 @@ namespace TheGatekeeper
         private void ShowDaySummary()
         {
             pressureTimer.Stop();
-            string summary = $"═══ DAY {day} COMPLETE ═══\n\n" +
-                           $"Score: {score} pts\n" +
-                           $"Health: {health}/3\n" +
-                           $"Checked: {charactersChecked}/{dailyQuota}\n\n" +
-                           "Press SPACE to continue to next day...";
 
-            StartTypingEffect(summary);
-            lblDialogue.ForeColor = Color.Cyan;
+            // Создаём и показываем форму
+            var summaryForm = new DaySummaryForm(
+                day,
+                score,
+                health,
+                charactersChecked,
+                dailyQuota,
+                dailyDecisions
+            );
 
-            KeyEventHandler handler = null;
-            handler = (s, e) =>
+            // Очищаем решения для следующего дня
+            dailyDecisions.Clear();
+
+            var result = summaryForm.ShowDialog(this);
+
+            if (summaryForm.ContinueToNextDay)
             {
-                if (e.KeyCode == Keys.Space)
-                {
-                    this.KeyDown -= handler;
-                    StartNextDay();
-                }
-            };
-            this.KeyDown += handler;
+                StartNextDay();
+            }
+            else
+            {
+                // Возврат в меню (можно просто закрыть игру или показать WelcomeForm)
+                this.Close();
+                // Если хотите вернуться в меню, замените на:
+                // Application.Restart();
+            }
+        }
+        private void GenerateNewDay()
+        {
+            todayCast = CharacterFactory.GenerateDayCast(
+                day,
+                humanCount: 3,
+                robotCount: day >= 2 ? 1 : 0,
+                alienCount: day >= 3 ? 1 : 0
+            );
+
+            currentCharacterIndex = 0;
+            LoadCurrentCharacter();
         }
 
         private void StartNextDay()
@@ -877,7 +922,18 @@ namespace TheGatekeeper
             pressureSeconds = 0;
             dailyQuota = Math.Min(3 + (day - 1), 10);
 
-            SpawnNewCharacter();
+            // Генерируем новый состав на следующий день
+            todayCast = CharacterFactory.GenerateMixedCast(
+                day,
+                guaranteedHumans: 1,
+                guaranteedRobots: 0,
+                guaranteedAliens: 0,
+                randomTypeCount: 4
+            );
+
+            currentCharacterIndex = 0;
+            LoadCurrentCharacter();
+
             lblDialogue.ForeColor = Color.Lime;
             UpdateStatsUI();
             pressureTimer.Start();
@@ -894,6 +950,19 @@ namespace TheGatekeeper
             lblPressure.ForeColor = c;
             lblPressure.Text = $"PRESSURE: {pct,3}%  [{bar}]";
         }
+        private string GetCharacterMonitorText()
+        {
+            if (currentCharacterData == null)
+                return "NO SUBJECT";
+
+            return
+                $"NAME: {currentCharacterData.Name}\n" +
+                $"TYPE: {currentCharacterData.Species}\n" +
+                $"JOB: {currentCharacterData.Occupation}\n" +
+                $"REASON: {currentCharacterData.ReasonToEnter}\n" +
+                $"DAY: {currentCharacterData.Day}";
+        }
+        
 
         // ═══════════════════════════════════════════════════════════════════
         //  РЕНДЕР
@@ -916,6 +985,8 @@ namespace TheGatekeeper
 
             DrawShutter(g);
             DrawClock(g);
+            DrawMonitorText(g);
+
 
             if (frontBackground != null)
                 g.DrawImage(frontBackground, 0, 0, ClientSize.Width, ClientSize.Height);
@@ -932,6 +1003,19 @@ namespace TheGatekeeper
             }
 
             _buffer.Render();
+
+        }
+
+        private void DrawMonitorText(Graphics g)
+        {
+            Rectangle rect = ScaleRect(zoneRightScreen);
+
+            using (Font font = new Font("Consolas", 9, FontStyle.Bold))
+            using (SolidBrush brush = new SolidBrush(Color.Lime))
+            {
+                g.DrawString(GetCharacterMonitorText(), font, brush, rect);
+            }
+
         }
         private void DrawInteractiveGlow(Graphics g)
         {
@@ -967,6 +1051,38 @@ namespace TheGatekeeper
 
             path.CloseFigure();
             return path;
+        }
+        private string[] GetDayStickerTexts()
+        {
+            return new[]
+            {
+        $"DAY {day}",
+        $"CODE D-{day}X",
+        day < 3 ? "CHECK ID" : "CHECK SPEECH",
+        $"THREAT {Math.Min(day, 5)}"
+    };
+        }
+
+        private void DrawStickerTexts(Graphics g)
+        {
+            var texts = GetDayStickerTexts();
+
+            Rectangle[] zones =
+            {
+        ScaleRect(zoneSticker1),
+        ScaleRect(zoneSticker2),
+        ScaleRect(zoneSticker3),
+        ScaleRect(zoneSticker4)
+    };
+
+            using (Font font = new Font("Consolas", 8, FontStyle.Bold))
+            using (SolidBrush brush = new SolidBrush(Color.Black))
+            {
+                for (int i = 0; i < zones.Length; i++)
+                {
+                    g.DrawString(texts[i], font, brush, zones[i]);
+                }
+            }
         }
 
         private void DrawClock(Graphics g)

@@ -31,17 +31,29 @@ namespace TheGatekeeper
         private readonly Rectangle greenZoneBase = new Rectangle(280, 550, 100, 80);
         private readonly Rectangle monitorRectBase = new Rectangle(350, 170, 585, 450);
 
-        // ─── Интерактивные зоны (из макета) ─────────────────────────────────
-        private readonly Rectangle zoneLeftMonitorTop = new Rectangle(18, 80, 140, 130);
-        private readonly Rectangle zoneLeftMonitorBot = new Rectangle(18, 225, 140, 100);
-        private readonly Rectangle zoneLeftData = new Rectangle(18, 340, 140, 110);
-        private readonly Rectangle zoneRightMonitor = new Rectangle(1072, 80, 190, 260);
-        private readonly Rectangle zoneSticker1 = new Rectangle(1066, 60, 95, 85);
-        private readonly Rectangle zoneSticker2 = new Rectangle(1052, 148, 85, 75);
-        private readonly Rectangle zoneSticker3 = new Rectangle(1061, 226, 90, 70);
-        private readonly Rectangle zoneClock = new Rectangle(480, 572, 170, 50);
-        private readonly Rectangle zoneGlowCircle = new Rectangle(1152, 570, 60, 60);
-        private readonly Rectangle zoneRadioPanel = new Rectangle(1072, 570, 190, 150);
+        // ─── ЛЕВЫЕ 3 ЭКРАНА ─────────────────────────────
+        private readonly Rectangle zoneLeftTop = new Rectangle(58, 150, 140, 92);
+        private readonly Rectangle zoneLeftMiddle = new Rectangle(53, 310, 165, 55);
+        private readonly Rectangle zoneLeftBottom = new Rectangle(54, 380, 78, 58);
+
+        // ─── ПРАВЫЕ СТИКЕРЫ (4 шт) ─────────────────────
+        private readonly Rectangle zoneSticker1 = new Rectangle(1025, 200, 85, 28);
+        private readonly Rectangle zoneSticker2 = new Rectangle(1020, 81, 90,85);
+        private readonly Rectangle zoneSticker3 = new Rectangle(1038, 255, 75, 60);
+        private readonly Rectangle zoneSticker4 = new Rectangle(1120, 143, 117, 140);
+
+        // ─── ПРАВЫЙ ЭКРАН ПОД СТИКЕРАМИ ────────────────
+        private readonly Rectangle zoneRightScreen = new Rectangle(1047, 330, 185, 90);
+
+        // ─── РАДИО БОЛЬШОЕ СНИЗУ ───────────────────────
+        private readonly Rectangle zoneBigRadio = new Rectangle(1070, 555, 210, 125);
+
+        // ─── МАЛЕНЬКАЯ РАЦИЯ ЛЕВЕЕ ─────────────────────
+        private readonly Rectangle zoneSmallRadio = new Rectangle(950, 490, 63, 130);
+
+        // ─── НИЖНИЙ ЧЁРНЫЙ ЭКРАН ───────────────────────
+        private readonly Rectangle zoneDialogueScreen = new Rectangle(510, 498, 275, 74);
+        private int hoveredZone = -1;
 
         // ─── Буфер рендера ───────────────────────────────────────────────────
         private BufferedGraphicsContext _bufCtx;
@@ -81,6 +93,8 @@ namespace TheGatekeeper
         private int typingIndex = 0;
 
         private readonly Random rnd = new Random();
+
+        private readonly Rectangle zoneClock = new Rectangle(480, 572, 170, 50);
 
         // ─── Контент всплывашек ──────────────────────────────────────────────
         private readonly (string Title, string Body)[] overlayData = new[]
@@ -262,18 +276,21 @@ namespace TheGatekeeper
             this.Resize += (s, e) => ReallocBuffer();
 
             interactiveZones = new[]
-            {
-                zoneLeftMonitorTop,
-                zoneLeftMonitorBot,
-                zoneLeftData,
-                zoneRightMonitor,
-                zoneSticker1,
-                zoneSticker2,
-                zoneSticker3,
-                zoneClock,
-                zoneGlowCircle,
-                zoneRadioPanel,
-            };
+{
+    zoneLeftTop,
+    zoneLeftMiddle,
+    zoneLeftBottom,
+
+    zoneSticker1,
+    zoneSticker2,
+    zoneSticker3,
+    zoneSticker4,
+
+    zoneRightScreen,
+    zoneBigRadio,
+    zoneSmallRadio,
+    zoneDialogueScreen
+};
 
             LoadResources();
             CreateTransparentUI();
@@ -301,6 +318,7 @@ namespace TheGatekeeper
 
 
             this.MouseClick += Form_MouseClick;
+            this.MouseMove += Form_MouseMove;
             this.KeyDown += (s, e) =>
             {
                 if (e.KeyCode == Keys.Escape)
@@ -316,6 +334,26 @@ namespace TheGatekeeper
             };
 
             pressureTimer.Start();
+        }
+        private void Form_MouseMove(object sender, MouseEventArgs e)
+        {
+            int newHovered = -1;
+
+            for (int i = 0; i < interactiveZones.Length; i++)
+            {
+                if (ScaleRect(interactiveZones[i]).Contains(e.Location))
+                {
+                    newHovered = i;
+                    break;
+                }
+            }
+
+            if (hoveredZone != newHovered)
+            {
+                hoveredZone = newHovered;
+                Cursor = hoveredZone >= 0 ? Cursors.Hand : Cursors.Default;
+                Redraw();
+            }
         }
 
         // ═══════════════════════════════════════════════════════════════════
@@ -389,15 +427,17 @@ namespace TheGatekeeper
             // ПРОЗРАЧНОЕ ОКНО ДЛЯ ДИАЛОГОВ (с полупрозрачным тёмным фоном)
             lblDialogue = new Label
             {
-                Text = "Subject at terminal. Begin interrogation.",
-                Location = new Point(400, 492),
-                Size = new Size(565, 80),
-                ForeColor = Color.FromArgb(255, 100, 255, 100),
-                BackColor = Color.FromArgb(120, 0, 0, 0), // Полупрозрачный чёрный
-                Font = new Font("Consolas", 9),
-                TextAlign = ContentAlignment.TopLeft,
-                Padding = new Padding(8, 4, 8, 4)
+                Text = "",
+                ForeColor = Color.FromArgb(0, 255, 120),
+                BackColor = Color.Transparent,
+                Font = new Font("Consolas", 10, FontStyle.Bold),
+                TextAlign = ContentAlignment.MiddleLeft,
+                Padding = new Padding(10, 4, 10, 4)
             };
+
+            Rectangle zone = ScaleRect(zoneDialogueScreen);
+            lblDialogue.Location = zone.Location;
+            lblDialogue.Size = zone.Size;
 
             foreach (var c in new Control[]
                 { lblScore, lblHealth, lblDay, lblQuota, lblPressure, lblName, lblDialogue })
@@ -600,6 +640,11 @@ namespace TheGatekeeper
                     ShowOverlay(i);
                     return;
                 }
+                if (ScaleRect(zoneDialogueScreen).Contains(p))
+                {
+                    OpenCharacterDialogue();
+                    return;
+                }
             }
 
             // 2. Проверяем кнопки решения
@@ -653,6 +698,10 @@ namespace TheGatekeeper
 
             isClosing = true;
             shutterTimer.Start();
+        }
+        private void OpenCharacterDialogue()
+        {
+            ShowQuestionDialog();
         }
 
         // ═══════════════════════════════════════════════════════════════════
@@ -871,6 +920,8 @@ namespace TheGatekeeper
             if (frontBackground != null)
                 g.DrawImage(frontBackground, 0, 0, ClientSize.Width, ClientSize.Height);
 
+            DrawInteractiveGlow(g);
+
             if (currentBtnImage != null)
                 g.DrawImage(currentBtnImage, 0, 0, ClientSize.Width, ClientSize.Height);
 
@@ -881,6 +932,41 @@ namespace TheGatekeeper
             }
 
             _buffer.Render();
+        }
+        private void DrawInteractiveGlow(Graphics g)
+        {
+            if (hoveredZone < 0) return;
+
+            Rectangle r = ScaleRect(interactiveZones[hoveredZone]);
+
+            using (GraphicsPath path = RoundedRect(r, 10))
+            {
+                for (int i = 8; i >= 1; i--)
+                {
+                    using (Pen p = new Pen(Color.FromArgb(18 * i, 0, 255, 255), i))
+                    {
+                        g.DrawPath(p, path);
+                    }
+                }
+
+                using (SolidBrush br = new SolidBrush(Color.FromArgb(18, 0, 255, 255)))
+                {
+                    g.FillPath(br, path);
+                }
+            }
+        }
+        private GraphicsPath RoundedRect(Rectangle bounds, int radius)
+        {
+            int d = radius * 2;
+            GraphicsPath path = new GraphicsPath();
+
+            path.AddArc(bounds.X, bounds.Y, d, d, 180, 90);
+            path.AddArc(bounds.Right - d, bounds.Y, d, d, 270, 90);
+            path.AddArc(bounds.Right - d, bounds.Bottom - d, d, d, 0, 90);
+            path.AddArc(bounds.X, bounds.Bottom - d, d, d, 90, 90);
+
+            path.CloseFigure();
+            return path;
         }
 
         private void DrawClock(Graphics g)

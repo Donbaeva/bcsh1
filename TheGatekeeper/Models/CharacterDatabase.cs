@@ -7,16 +7,13 @@ namespace TheGatekeeper.Models
         private static Random rnd = new Random();
 
         public static readonly string[] FirstNames = {
-            // Универсальные / международные
             "Alex", "Jamie", "Casey", "Nova", "Orion", "Morgan", "Riley", "Cameron", "Taylor", "Jordan",
             "Avery", "Quinn", "Reese", "Sage", "Blair", "Dakota", "Emerson", "Finley", "Harper", "Parker",
-            // Мужские
             "James", "John", "Robert", "Michael", "William", "David", "Richard", "Joseph", "Thomas", "Charles",
             "Christopher", "Daniel", "Matthew", "Anthony", "Mark", "Donald", "Steven", "Paul", "Andrew", "Joshua",
             "Kenneth", "Kevin", "Brian", "George", "Edward", "Ronald", "Timothy", "Jason", "Jeffrey", "Ryan",
             "Jacob", "Gary", "Nicholas", "Eric", "Jonathan", "Stephen", "Larry", "Justin", "Scott", "Brandon",
             "Benjamin", "Samuel", "Gregory", "Frank", "Alexander", "Raymond", "Patrick", "Jack", "Dennis", "Jerry",
-            // Женские
             "Mary", "Patricia", "Jennifer", "Linda", "Elizabeth", "Barbara", "Susan", "Jessica", "Sarah", "Karen",
             "Nancy", "Lisa", "Betty", "Margaret", "Sandra", "Ashley", "Kimberly", "Emily", "Donna", "Michelle",
             "Dorothy", "Carol", "Amanda", "Melissa", "Deborah", "Stephanie", "Rebecca", "Sharon", "Laura", "Cynthia",
@@ -35,19 +32,36 @@ namespace TheGatekeeper.Models
             "Steele", "Kane", "Blackwood", "Thorne", "Irons", "Caine", "Shade", "Flint", "Hawk", "Wolf"
         };
 
-        // Имена для пришельцев (остаются странными)
-        public static readonly string[] AlienNames =
+        // Настоящие инопланетные имена — используются ТОЛЬКО до Дня 4 включительно
+        private static readonly string[] AlienNamesObvious =
         {
-            "Ma'saryk", "Zyx", "Kr'zzak", "Vel'kor", "Nyx'ara", "NeO", "Morpheus", "Gan'dalf", "Vold'mort",
-            "Fro'Do", "Qlx'thor", "Az'rael", "Vex'lon", "Kor'thas", "Zyl'vex", "ThOrr", "Azgaard", "Lokii",
-            "Nap'Leon", "Moz'Art", "Cleo'Patra", "Kaf'Ka", "Kne'dlik", "Svi'Cko'Va", "Pil'Sner",
+            "Ma'saryk", "Zyx", "Kr'zzak", "Vel'kor", "Nyx'ara",
+            "Qlx'thor", "Az'rael", "Vex'lon", "Kor'thas", "Zyl'vex",
+            "Zzarth", "Vell", "Krxx", "Nyxar", "Qeth",
+        };
+
+        // Человеческие прикрытия — используются с Дня 5 пришельцами
+        // Нарочито обычные, ничем не выдающиеся
+        private static readonly string[] AlienCoverNames =
+        {
+            "Marcus Webb",   "Lena Frost",    "Owen Carr",     "Diana Cole",
+            "Peter Hale",    "Cora Vance",    "Simon Marsh",   "Elena Cross",
+            "Victor Reed",   "Nadia Stone",   "Carl Ashton",   "Irene Locke",
+            "Hugo Steele",   "Vera Thorne",   "Leon Graves",   "Mira Kane",
+            "Otto Black",    "Sonja Pierce",  "Miles Shade",   "Tara Wolf",
+            "Rene Flint",    "Anya Hawk",     "Cole Irons",    "Lyra Caine",
         };
 
         public static string GetRandomName() =>
             FirstNames[rnd.Next(FirstNames.Length)] + " " + LastNames[rnd.Next(LastNames.Length)];
 
-        public static string GetRandomAlienName() =>
-            AlienNames[rnd.Next(AlienNames.Length)];
+        // После Дня 4 пришельцы используют человеческие имена-прикрытия
+        public static string GetRandomAlienName(int day = 1)
+        {
+            if (day >= 5)
+                return AlienCoverNames[rnd.Next(AlienCoverNames.Length)];
+            return AlienNamesObvious[rnd.Next(AlienNamesObvious.Length)];
+        }
 
         public static readonly string[] Reasons = {
             "Work", "Trade", "Tourism", "Diplomacy", "Medical", "Research",
@@ -62,9 +76,25 @@ namespace TheGatekeeper.Models
             "Administrator", "Accountant", "Lawyer", "Architect", "Researcher"
         };
 
-        // ═══════════════════════════════════════════════════════════════════
-        // МЕТОДЫ ПОЛУЧЕНИЯ СЛУЧАЙНЫХ ДАННЫХ
-        // ═══════════════════════════════════════════════════════════════════
+        // Переменная квота по дням: 3–7 персонажей
+        // Дни 1–2: 3–4 (обучение), Дни 3–5: 4–5, Дни 6–10: 5–7
+        public static int GetDailyQuota(int day)
+        {
+            switch (day)
+            {
+                case 1: return 3;
+                case 2: return 4;
+                case 3: return 4;
+                case 4: return 5;
+                case 5: return 5;
+                case 6: return 6;
+                case 7: return 6;
+                case 8: return 7;
+                case 9: return 7;
+                case 10: return 7;
+                default: return Math.Min(3 + day, 7);
+            }
+        }
 
         public static string GetRandomReason() =>
             Reasons[rnd.Next(Reasons.Length)];

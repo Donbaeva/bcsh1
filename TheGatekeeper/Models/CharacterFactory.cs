@@ -281,7 +281,7 @@ namespace TheGatekeeper.Models
             for (int i = 0; i < alienCount; i++)
             {
                 var c = new Alien(
-                    CharacterDatabase.GetRandomAlienName(), "",
+                    CharacterDatabase.GetRandomAlienName(day), "",
                     CharacterDatabase.GetRandomAlienPlanet(),
                     rnd.Next(2, 8), rnd.Next(0, 10) > 5, day);
                 c.AccessCode = GenerateAccessCode(day);
@@ -321,7 +321,7 @@ namespace TheGatekeeper.Models
                     break;
                 case 2:
                     c = new Alien(
-                        CharacterDatabase.GetRandomAlienName(), "",
+                        CharacterDatabase.GetRandomAlienName(day), "",
                         CharacterDatabase.GetRandomAlienPlanet(),
                         rnd.Next(2, 8), rnd.Next(0, 10) > 5, day);
                     c.AccessCode = GenerateAccessCode(day);

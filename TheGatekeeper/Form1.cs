@@ -7,7 +7,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using TheGatekeeper.Models;
-
+using static TheGatekeeper.Models.Character;
 
 namespace TheGatekeeper
 {
@@ -20,6 +20,7 @@ namespace TheGatekeeper
         private Image btnDefault, btnRed, btnBlue, btnGreen;
         private Image currentBtnImage;
         private Image currentCharacter;
+        private List<StickerFloatPanel> _activeStickers = new List<StickerFloatPanel>();
 
         private int shutterHeight = 0;
         private const int shutterMaxHeight = 450;
@@ -27,34 +28,25 @@ namespace TheGatekeeper
         private bool isAnimating = false;
         private bool isClosing = false;
 
-        // ─── Зоны клика — кнопки решения ────────────────────────────────────
+        // ─── Зоны клика ─────────────────────────────────────────────────────
         private readonly Rectangle redZoneBase = new Rectangle(50, 550, 100, 80);
         private readonly Rectangle blueZoneBase = new Rectangle(120, 550, 100, 80);
         private readonly Rectangle greenZoneBase = new Rectangle(280, 550, 100, 80);
         private readonly Rectangle monitorRectBase = new Rectangle(350, 170, 585, 450);
 
-        // ─── ЛЕВЫЕ 3 ЭКРАНА ─────────────────────────────
         private readonly Rectangle zoneLeftTop = new Rectangle(58, 150, 140, 92);
         private readonly Rectangle zoneLeftMiddle = new Rectangle(53, 310, 165, 55);
         private readonly Rectangle zoneLeftBottom = new Rectangle(54, 380, 78, 58);
-
-        // ─── ПРАВЫЕ СТИКЕРЫ (4 шт) ─────────────────────
         private readonly Rectangle zoneSticker1 = new Rectangle(1025, 200, 85, 28);
-        private readonly Rectangle zoneSticker2 = new Rectangle(1020, 81, 90,85);
+        private readonly Rectangle zoneSticker2 = new Rectangle(1020, 81, 90, 85);
         private readonly Rectangle zoneSticker3 = new Rectangle(1038, 255, 75, 60);
         private readonly Rectangle zoneSticker4 = new Rectangle(1120, 143, 117, 140);
-
-        // ─── ПРАВЫЙ ЭКРАН ПОД СТИКЕРАМИ ────────────────
         private readonly Rectangle zoneRightScreen = new Rectangle(1047, 330, 185, 90);
-
-        // ─── РАДИО БОЛЬШОЕ СНИЗУ ───────────────────────
         private readonly Rectangle zoneBigRadio = new Rectangle(1070, 555, 210, 125);
-
-        // ─── МАЛЕНЬКАЯ РАЦИЯ ЛЕВЕЕ ─────────────────────
         private readonly Rectangle zoneSmallRadio = new Rectangle(950, 490, 63, 130);
-
-        // ─── НИЖНИЙ ЧЁРНЫЙ ЭКРАН ───────────────────────
         private readonly Rectangle zoneDialogueScreen = new Rectangle(510, 498, 275, 74);
+        private readonly Rectangle zoneClock = new Rectangle(480, 572, 170, 50);
+
         private int hoveredZone = -1;
 
         // ─── Буфер рендера ───────────────────────────────────────────────────
@@ -66,18 +58,20 @@ namespace TheGatekeeper
         private Color flashColor = Color.Transparent;
         private Timer flashTimer;
 
-        // ─── UI-лейблы (прозрачный фон) ──────────────────────────────────────
+        // ─── UI-лейблы ───────────────────────────────────────────────────────
         private Label lblScore, lblHealth, lblDay, lblQuota;
         private Label lblPressure;
         private Label lblName;
         private Label lblDialogue;
+        private Label lblMode;          // плашка режима (угол экрана)
 
-        // ─── Всплывающее окно (overlay) ──────────────────────────────────────
+        // ─── Overlay ─────────────────────────────────────────────────────────
         private Panel overlayPanel;
         private Label overlayTitle;
         private Label overlayBody;
         private Button overlayClose;
 
+        // ─── Состояние игры ──────────────────────────────────────────────────
         private int score = 0, health = 3, day = 1;
         private int charactersChecked = 0, dailyQuota = 5;
         private int pressureSeconds = 0;
@@ -89,26 +83,44 @@ namespace TheGatekeeper
         private Character currentCharacterData;
         private int currentCharacterIndex = 0;
 
-
-        // Секунды смены для часов
         private int shiftSeconds = 0;
 
-        // Таймер печатающей машинки для диалогов
         private Timer typingTimer;
         private string fullDialogueText = "";
         private int typingIndex = 0;
-        private List<(Character character, string decision)> dailyDecisions = new List<(Character character, string decision)>();
 
-
-        private readonly Rectangle zoneClock = new Rectangle(480, 572, 170, 50);
+        private List<(Character character, string decision)> dailyDecisions
+            = new List<(Character character, string decision)>();
 
         private Rectangle[] interactiveZones;
 
-        public Form1()
+        // ─── РЕЖИМ ИГРЫ ──────────────────────────────────────────────────────
+        private GameMode currentMode;
+
+        // Флаги для режима storyModeActive используются в Form1_StoryPatch
+        internal bool storyModeActive => currentMode == GameMode.StoryMode;
+        private bool huntModeActive => currentMode == GameMode.HuntMode;
+        private bool endlessModeActive => currentMode == GameMode.EndlessMode;
+
+        // ─── РЕЖИМ ОХОТЫ: данные о злодее ───────────────────────────────────
+        private Character huntVillain;          // кто злодей в текущей волне
+        private int huntWave = 1;       // номер волны (уровень сложности)
+        private int huntWaveSize = 6;       // персонажей в волне
+        private int huntCorrect = 0;       // верно пропущено/отклонено в волне
+        private bool huntVillainFound = false;   // злодей найден в этой волне
+
+        // ─── БЕСКОНЕЧНЫЙ РЕЖИМ ───────────────────────────────────────────────
+        private int endlessTotal = 0;       // всего прошло персонажей
+        private int endlessStreak = 0;       // серия верных ответов подряд
+        private int endlessBestStreak = 0;
+
+        // ═══════════════════════════════════════════════════════════════════
+        //  КОНСТРУКТОР
+        // ═══════════════════════════════════════════════════════════════════
+        public Form1(GameMode mode = GameMode.StoryMode)
         {
-            // ═══════════════════════════════════════════════════════════════
-            // 1. НАСТРОЙКА ФОРМЫ
-            // ═══════════════════════════════════════════════════════════════
+            currentMode = mode;
+
             this.DoubleBuffered = true;
             this.SetStyle(
                 ControlStyles.AllPaintingInWmPaint |
@@ -121,26 +133,17 @@ namespace TheGatekeeper
             this.BackColor = Color.Black;
             this.KeyPreview = true;
 
-            // ═══════════════════════════════════════════════════════════════
-            // 2. ГРАФИЧЕСКИЙ БУФЕР
-            // ═══════════════════════════════════════════════════════════════
             _bufCtx = BufferedGraphicsManager.Current;
             ReallocBuffer();
             this.Resize += (s, e) => ReallocBuffer();
 
-            // ═══════════════════════════════════════════════════════════════
-            // 3. ИНТЕРАКТИВНЫЕ ЗОНЫ
-            // ═══════════════════════════════════════════════════════════════
             interactiveZones = new[]
             {
-        zoneLeftTop, zoneLeftMiddle, zoneLeftBottom,
-        zoneSticker1, zoneSticker2, zoneSticker3, zoneSticker4,
-        zoneRightScreen, zoneBigRadio, zoneSmallRadio, zoneDialogueScreen
-    };
+                zoneLeftTop, zoneLeftMiddle, zoneLeftBottom,
+                zoneSticker1, zoneSticker2, zoneSticker3, zoneSticker4,
+                zoneRightScreen, zoneBigRadio, zoneSmallRadio, zoneDialogueScreen
+            };
 
-            // ═══════════════════════════════════════════════════════════════
-            // 4. ТАЙМЕРЫ (СОЗДАЁМ РАНО, чтобы UI мог их использовать)
-            // ═══════════════════════════════════════════════════════════════
             shutterTimer = new Timer { Interval = 15 };
             shutterTimer.Tick += ShutterTimer_Tick;
 
@@ -155,40 +158,21 @@ namespace TheGatekeeper
             {
                 if (pressureSeconds < 60) pressureSeconds++;
                 UpdatePressureUI();
+                UpdateMonitorPanelNoise(); // обновляем уровень помех в панелях
+                // В бесконечном режиме давление нарастает быстрее с каждым уровнем
+                if (endlessModeActive && pressureSeconds >= 60)
+                    ApplyEndlessPressurePenalty();
             };
 
-            // ═══════════════════════════════════════════════════════════════
-            // 5. РЕСУРСЫ И UI
-            // ═══════════════════════════════════════════════════════════════
-            LoadResources();        // Загрузка изображений
-            CreateTransparentUI();  // Создание Label-ов (может использовать таймеры)
-            CreateOverlay();        // Создание всплывающих окон
+            LoadResources();
+            CreateTransparentUI();
+            CreateOverlay();
 
-            // ═══════════════════════════════════════════════════════════════
-            // 6. МЕНЕДЖЕР ОВЕРЛЕЕВ
-            // ═══════════════════════════════════════════════════════════════
             OverlayManagerInstance = new OverlayManager(this);
 
-            // ═══════════════════════════════════════════════════════════════
-            // 7. ГЕНЕРАЦИЯ ПЕРСОНАЖЕЙ
-            // ═══════════════════════════════════════════════════════════════
-            //todayCast = CharacterFactory.GenerateMixedCast(
-            //    day,
-            //    guaranteedHumans: 1,
-            //    guaranteedRobots: 0,
-            //    guaranteedAliens: 0,
-            //    randomTypeCount: 4
-            //);
+            // Инициализируем cast по режиму
+            InitModeSession();
 
-
-            //currentCharacterIndex = 0;
-            //LoadCurrentCharacter();  // Вызывает StartTypingEffect → использует typingTimer
-
-            StorySchedule.BuildStoryCast(day);
-
-            // ═══════════════════════════════════════════════════════════════
-            // 8. СОБЫТИЯ МЫШИ И КЛАВИАТУРЫ
-            // ═══════════════════════════════════════════════════════════════
             this.MouseClick += Form_MouseClick;
             this.MouseMove += Form_MouseMove;
             this.KeyDown += (s, e) =>
@@ -207,23 +191,113 @@ namespace TheGatekeeper
                 }
             };
 
-            // ═══════════════════════════════════════════════════════════════
-            // 9. ЗАПУСК ТАЙМЕРА ДАВЛЕНИЯ
-            // ═══════════════════════════════════════════════════════════════
             pressureTimer.Start();
         }
+
+        // ═══════════════════════════════════════════════════════════════════
+        //  ИНИЦИАЛИЗАЦИЯ СЕССИИ ПО РЕЖИМУ
+        // ═══════════════════════════════════════════════════════════════════
+        private void InitModeSession()
+        {
+            switch (currentMode)
+            {
+                case GameMode.StoryMode:
+                    EndingTracker.Reset();
+                    StoryFlags.HasanReachedLab = false;
+                    StoryFlags.NinaArrested = false;
+                    StoryFlags.MirraBetrayed = false;
+                    StoryFlags.ServX1Passed = false;
+                    day = 1;
+                    InitDailyQuota(); // таблица: день 1 = 3 персонажа
+                    todayCast = StorySchedule.BuildStoryCast(day, randomTypeCount: Math.Max(1, dailyQuota - 1));
+                    break;
+
+                case GameMode.HuntMode:
+                    day = 1;
+                    huntWave = 1;
+                    huntWaveSize = 6;
+                    dailyQuota = huntWaveSize;
+                    BuildHuntWave();
+                    break;
+
+                case GameMode.EndlessMode:
+                    day = 1;
+                    endlessTotal = 0;
+                    endlessStreak = 0;
+                    endlessBestStreak = 0;
+                    dailyQuota = 5;
+                    todayCast = CharacterFactory.GenerateMixedCast(day, 1, 1, 0, 3);
+                    break;
+            }
+
+            currentCharacterIndex = 0;
+            LoadCurrentCharacter();
+            UpdateModeLabel();
+            UpdateStatsUI();
+        }
+
+        // ─── ОХОТА: строим волну ─────────────────────────────────────────────
+        private void BuildHuntWave()
+        {
+            // Чем выше волна, тем больше маскировка злодея
+            int villainDay = Math.Min(huntWave + 1, 9);
+            huntVillainFound = false;
+            huntCorrect = 0;
+
+            // Злодей — случайный тип (Робот или Пришелец), замаскированный под человека
+            var rng = new Random();
+            bool isRobot = rng.Next(0, 2) == 0;
+
+            if (isRobot)
+            {
+                huntVillain = new Robot(
+                    CharacterDatabase.GetRandomName(), "",
+                    $"V-SN-{rng.Next(100, 999)}",
+                    CharacterDatabase.GetRandomProfession(),
+                    false,          // isObvious = всегда неочевиден
+                    villainDay);
+            }
+            else
+            {
+                huntVillain = new Alien(
+                    CharacterDatabase.GetRandomAlienName(), "",
+                    CharacterDatabase.GetRandomAlienPlanet(),
+                    rng.Next(0, 3),
+                    false,
+                    villainDay);
+            }
+
+            huntVillain.AccessCode = GenerateWrongCode(); // специально неверный
+            huntVillain.Photo = null; // фабрика назначит фото
+            huntVillain.Dialogue = CharacterAI.GenerateGreeting(huntVillain);
+
+            // Обычные люди заполняют квоту
+            var humans = CharacterFactory.GenerateDayCast(villainDay, huntWaveSize - 1, 0, 0);
+
+            todayCast = humans;
+            // Вставляем злодея в случайную позицию
+            int pos = rng.Next(0, todayCast.Count + 1);
+            todayCast.Insert(pos, huntVillain);
+
+            dailyQuota = todayCast.Count;
+        }
+
+        private string GenerateWrongCode()
+        {
+            // Код от предыдущего дня — намеренно устаревший
+            string[] prefixes = { "7741", "3392", "5521", "8834", "2219", "6657" };
+            int idx = ((day - 1) + 5) % prefixes.Length; // сдвиг на "вчера"
+            return $"{prefixes[idx]}-ERR";
+        }
+
+        // ═══════════════════════════════════════════════════════════════════
+        //  MOUSE / KEYBOARD
+        // ═══════════════════════════════════════════════════════════════════
         private void Form_MouseMove(object sender, MouseEventArgs e)
         {
             int newHovered = -1;
-
             for (int i = 0; i < interactiveZones.Length; i++)
-            {
-                if (ScaleRect(interactiveZones[i]).Contains(e.Location))
-                {
-                    newHovered = i;
-                    break;
-                }
-            }
+                if (ScaleRect(interactiveZones[i]).Contains(e.Location)) { newHovered = i; break; }
 
             if (hoveredZone != newHovered)
             {
@@ -231,6 +305,247 @@ namespace TheGatekeeper
                 Cursor = hoveredZone >= 0 ? Cursors.Hand : Cursors.Default;
                 Redraw();
             }
+        }
+
+        private async void Form_MouseClick(object sender, MouseEventArgs e)
+        {
+            if (overlayPanel.Visible) return;
+
+            Point p = e.Location;
+
+            for (int i = 0; i < interactiveZones.Length; i++)
+            {
+                if (ScaleRect(interactiveZones[i]).Contains(p))
+                {
+                    if (i == 9) { ShowQuestionDialog(); return; }
+                    ShowOverlay(i);
+                    return;
+                }
+            }
+
+            if (ScaleRect(zoneDialogueScreen).Contains(p))
+            {
+                ShowDialogueLog(); // открыть лог диалога
+                return;
+            }
+
+            if (isAnimating || currentCharacterData == null) return;
+
+            Image nextBtn = null;
+            Color fColor = Color.Transparent;
+            string decision = "";
+
+            if (ScaleRect(redZoneBase).Contains(p)) { nextBtn = btnRed; fColor = Color.Red; decision = "ROBOT"; }
+            else if (ScaleRect(blueZoneBase).Contains(p)) { nextBtn = btnBlue; fColor = Color.DodgerBlue; decision = "ALIEN"; }
+            else if (ScaleRect(greenZoneBase).Contains(p)) { nextBtn = btnGreen; fColor = Color.Lime; decision = "HUMAN"; }
+
+            if (nextBtn == null) return;
+
+            isAnimating = true;
+            currentBtnImage = nextBtn;
+            pressureTimer.Stop();
+
+            StartFlash(fColor);
+            Redraw();
+            await Task.Delay(250);
+            currentBtnImage = btnDefault;
+
+            // Обрабатываем решение по текущему режиму
+            await ProcessDecision(decision);
+
+            isClosing = true;
+            shutterTimer.Start();
+        }
+
+        // ─── Центральный диспетчер решений ──────────────────────────────────
+        private async Task ProcessDecision(string decision)
+        {
+            if (currentCharacterData == null) return;
+
+            // Особые персонажи (взятки, клоны и т.д.)
+            bool handled = await HandleSpecialCharacter(currentCharacterData, decision);
+            if (handled) return;
+
+            switch (currentMode)
+            {
+                case GameMode.StoryMode: await ProcessStoryDecision(decision); break;
+                case GameMode.HuntMode: ProcessHuntDecision(decision); break;
+                case GameMode.EndlessMode: ProcessEndlessDecision(decision); break;
+            }
+
+            dailyDecisions.Add((currentCharacterData, decision));
+            charactersChecked++;
+
+            UpdateStatsUI();
+        }
+
+        // ─── СЮЖЕТНЫЙ режим ─────────────────────────────────────────────────
+        private async Task ProcessStoryDecision(string decision)
+        {
+            EndingTracker.RegisterDecision(currentCharacterData, decision);
+
+            StartTypingEffect($"Decision: {decision}. Processing...");
+
+            if (charactersChecked + 1 >= dailyQuota)
+            {
+                await Task.Delay(1500);
+                if (day >= 10)
+                    ShowStoryEnding();
+                else
+                    ShowDaySummary();
+            }
+        }
+
+        // ─── РЕЖИМ ОХОТЫ ─────────────────────────────────────────────────────
+        private void ProcessHuntDecision(string decision)
+        {
+            bool isVillain = ReferenceEquals(currentCharacterData, huntVillain);
+
+            if (isVillain)
+            {
+                // Злодей — правильно его отклонить (не HUMAN)
+                if (decision != "HUMAN")
+                {
+                    huntVillainFound = true;
+                    score += 200 + huntWave * 50;
+                    StartTypingEffect($"VILLAIN IDENTIFIED! +{200 + huntWave * 50} pts. Wave {huntWave} complete!");
+
+                    // Показываем сообщение об успехе через небольшую паузу
+                    Timer t = new Timer { Interval = 1800 };
+                    t.Tick += (s, e) => { t.Stop(); NextHuntWave(); };
+                    t.Start();
+                }
+                else
+                {
+                    // Злодей прошёл — штраф
+                    health--;
+                    score = Math.Max(0, score - 100);
+                    StartTypingEffect($"VILLAIN PASSED THROUGH! -{100} pts. Health: {health}");
+                    if (health <= 0) { ShowHuntGameOver(false); return; }
+                }
+            }
+            else
+            {
+                // Обычный гражданин
+                bool correct = decision == "HUMAN";
+                if (correct)
+                {
+                    huntCorrect++;
+                    score += 10;
+                    StartTypingEffect($"Correct. Citizen cleared. Score +10.");
+                }
+                else
+                {
+                    health--;
+                    score = Math.Max(0, score - 30);
+                    StartTypingEffect($"Wrong! Innocent citizen flagged. -{30} pts.");
+                    if (health <= 0) { ShowHuntGameOver(false); return; }
+                }
+            }
+
+            UpdateStatsUI();
+        }
+
+        private void NextHuntWave()
+        {
+            huntWave++;
+            huntWaveSize = Math.Min(6 + huntWave, 14);
+            day = huntWave;
+
+            BuildHuntWave();
+            currentCharacterIndex = 0;
+            charactersChecked = 0;
+            dailyDecisions.Clear();
+            pressureSeconds = 0;
+
+            LoadCurrentCharacter();
+            UpdateModeLabel();
+            UpdateStatsUI();
+            pressureTimer.Start();
+        }
+
+        private void ShowHuntGameOver(bool victory)
+        {
+            pressureTimer.Stop();
+            string msg = victory
+                ? $"ВОЛНА {huntWave} ПРОЙДЕНА!\n\nИтоговый счёт: {score}\nЗдоровье: {health}/3"
+                : $"ЗЛОДЕЙ ПРОРВАЛСЯ\n\nВы дошли до волны {huntWave}.\nИтоговый счёт: {score}";
+
+            MessageBox.Show(msg, victory ? "ПОБЕДА" : "КОНЕЦ СМЕНЫ",
+                MessageBoxButtons.OK, MessageBoxIcon.Information);
+            this.Close();
+        }
+
+        // ─── БЕСКОНЕЧНЫЙ режим ──────────────────────────────────────────────
+        private void ProcessEndlessDecision(string decision)
+        {
+            bool correct = EndingTracker.IsCorrect(currentCharacterData, decision);
+            endlessTotal++;
+
+            if (correct)
+            {
+                endlessStreak++;
+                if (endlessStreak > endlessBestStreak) endlessBestStreak = endlessStreak;
+
+                // Бонус за серию
+                int bonus = endlessStreak >= 5 ? 20 : endlessStreak >= 3 ? 15 : 10;
+                score += bonus;
+                StartTypingEffect($"Correct! Streak: {endlessStreak}x. +{bonus} pts.");
+            }
+            else
+            {
+                endlessStreak = 0;
+                health--;
+                score = Math.Max(0, score - 20);
+                StartTypingEffect($"Wrong! Streak broken. -{20} pts. HP: {health}");
+
+                if (health <= 0)
+                {
+                    ShowEndlessGameOver();
+                    return;
+                }
+            }
+
+            // Каждые 10 персонажей — переход на следующий «уровень»
+            if (endlessTotal % 10 == 0)
+            {
+                day++;
+                dailyQuota = Math.Min(dailyQuota + 1, 12);
+                RegenerateEndlessCast();
+                UpdateModeLabel();
+            }
+
+            UpdateStatsUI();
+        }
+
+        private void RegenerateEndlessCast()
+        {
+            // Добавляем новых персонажей в конец списка не трогая текущего
+            var newChars = CharacterFactory.GenerateMixedCast(day, 2, 1, 1, 5);
+            todayCast.AddRange(newChars);
+        }
+
+        private void ApplyEndlessPressurePenalty()
+        {
+            // Если игрок слишком долго думает — небольшой штраф
+            pressureSeconds = 0;
+            score = Math.Max(0, score - 5);
+            UpdateStatsUI();
+        }
+
+        private void ShowEndlessGameOver()
+        {
+            pressureTimer.Stop();
+            MessageBox.Show(
+                $"БЕСКОНЕЧНАЯ СМЕНА ОКОНЧЕНА\n\n" +
+                $"Проверено субъектов: {endlessTotal}\n" +
+                $"Итоговый счёт:       {score}\n" +
+                $"Лучшая серия:        {endlessBestStreak}x\n" +
+                $"Дожили до уровня:    {day}",
+                "КОНЕЦ СМЕНЫ",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
+            this.Close();
         }
 
         // ═══════════════════════════════════════════════════════════════════
@@ -267,7 +582,7 @@ namespace TheGatekeeper
             File.Exists(path) ? Image.FromFile(path) : null;
 
         // ═══════════════════════════════════════════════════════════════════
-        //  ПРОЗРАЧНЫЕ LABEL-ЭЛЕМЕНТЫ
+        //  UI
         // ═══════════════════════════════════════════════════════════════════
         private void CreateTransparentUI()
         {
@@ -276,7 +591,7 @@ namespace TheGatekeeper
             lblScore = MakeLabel("📊 0", Color.Gold, new Point(400, 10), 140);
             lblHealth = MakeLabel("❤️ 3", Color.Tomato, new Point(550, 10), 100);
             lblDay = MakeLabel("📅 DAY 1", Color.Cyan, new Point(660, 10), 130);
-            lblQuota = MakeLabel("📋 0/3", Color.White, new Point(800, 10), 110);
+            lblQuota = MakeLabel("📋 0/5", Color.White, new Point(800, 10), 110);
 
             lblPressure = new Label
             {
@@ -289,19 +604,17 @@ namespace TheGatekeeper
                 TextAlign = ContentAlignment.MiddleCenter
             };
 
-            // ПРОЗРАЧНОЕ ОКНО ДЛЯ ИМЕНИ (с полупрозрачным тёмным фоном)
             lblName = new Label
             {
                 Text = "OBJECT APPROACHING...",
                 Location = new Point(400, 464),
                 Size = new Size(565, 26),
                 ForeColor = Color.FromArgb(255, 230, 230, 230),
-                BackColor = Color.FromArgb(100, 0, 0, 0), // Полупрозрачный чёрный
+                BackColor = Color.FromArgb(100, 0, 0, 0),
                 Font = new Font("Consolas", 13, FontStyle.Bold),
                 TextAlign = ContentAlignment.MiddleCenter
             };
 
-            // ПРОЗРАЧНОЕ ОКНО ДЛЯ ДИАЛОГОВ (с полупрозрачным тёмным фоном)
             lblDialogue = new Label
             {
                 Text = "",
@@ -311,17 +624,67 @@ namespace TheGatekeeper
                 TextAlign = ContentAlignment.MiddleLeft,
                 Padding = new Padding(10, 4, 10, 4)
             };
-
             Rectangle zone = ScaleRect(zoneDialogueScreen);
             lblDialogue.Location = zone.Location;
             lblDialogue.Size = zone.Size;
 
+            // Плашка режима — правый верхний угол
+            lblMode = new Label
+            {
+                Text = ModeTag(),
+                Location = new Point(1050, 10),
+                Size = new Size(200, 22),
+                ForeColor = ModeTagColor(),
+                BackColor = Color.Transparent,
+                Font = new Font("Consolas", 9, FontStyle.Bold),
+                TextAlign = ContentAlignment.MiddleRight
+            };
+
             foreach (var c in new Control[]
-                { lblScore, lblHealth, lblDay, lblQuota, lblPressure, lblName, lblDialogue })
+                { lblScore, lblHealth, lblDay, lblQuota, lblPressure, lblName, lblDialogue, lblMode })
                 ScaleControl(c);
 
             this.Controls.AddRange(new Control[]
-                { lblScore, lblHealth, lblDay, lblQuota, lblPressure, lblName, lblDialogue });
+                { lblScore, lblHealth, lblDay, lblQuota, lblPressure, lblName, lblDialogue, lblMode });
+        }
+
+        private string ModeTag()
+        {
+            switch (currentMode)
+            {
+                case GameMode.StoryMode: return "▶ ПРОТОКОЛ ВРАТА";
+                case GameMode.HuntMode: return "🎯 ОХОТА";
+                case GameMode.EndlessMode: return "∞ БЕСКОНЕЧНАЯ СМЕНА";
+                default: return "";
+            }
+        }
+
+        private Color ModeTagColor()
+        {
+            switch (currentMode)
+            {
+                case GameMode.StoryMode: return Color.Cyan;
+                case GameMode.HuntMode: return Color.Tomato;
+                case GameMode.EndlessMode: return Color.Gold;
+                default: return Color.White;
+            }
+        }
+
+        private void UpdateModeLabel()
+        {
+            if (lblMode == null) return;
+            switch (currentMode)
+            {
+                case GameMode.HuntMode:
+                    lblMode.Text = $"🎯 ОХОТА  Волна {huntWave}";
+                    break;
+                case GameMode.EndlessMode:
+                    lblMode.Text = $"∞ LVL {day}  серия {endlessStreak}x";
+                    break;
+                default:
+                    lblMode.Text = ModeTag();
+                    break;
+            }
         }
 
         private void ScaleControl(Control c)
@@ -345,7 +708,7 @@ namespace TheGatekeeper
             };
 
         // ═══════════════════════════════════════════════════════════════════
-        //  OVERLAY — всплывающее окно поверх всего
+        //  OVERLAY
         // ═══════════════════════════════════════════════════════════════════
         private void CreateOverlay()
         {
@@ -390,14 +753,12 @@ namespace TheGatekeeper
                 Font = new Font("Consolas", 13, FontStyle.Bold),
                 TextAlign = ContentAlignment.MiddleLeft
             };
-
             var divider = new Label
             {
                 Location = new Point(20, 46),
                 Size = new Size(cardW - 40, 1),
                 BackColor = Color.FromArgb(60, 51, 102, 170)
             };
-
             overlayBody = new Label
             {
                 Location = new Point(20, 56),
@@ -407,7 +768,6 @@ namespace TheGatekeeper
                 Font = new Font("Consolas", 10),
                 TextAlign = ContentAlignment.TopLeft
             };
-
             overlayClose = new Button
             {
                 Text = "✕",
@@ -432,49 +792,92 @@ namespace TheGatekeeper
 
         private void ShowOverlay(int index)
         {
-            // Если кликнули по зоне стикера 1 (индекс 3 в вашем массиве interactiveZones)
-            if (index == 3)
+            // Зоны 0, 1, 2 — плавающие анимированные панели мониторов
+            if (index >= 0 && index <= 2)
             {
-                using (var checklist = new ChecklistForm())
-                {
-                    checklist.ShowDialog(this);
-                }
+                OpenMonitorPanel(index);
                 return;
             }
 
-            // Для остальных зон берем динамический текст
+            // Зоны 3, 4, 5, 6 — Желтые стикеры
+            if (index >= 3 && index <= 6)
+            {
+                // Вызываем метод, который правильно создает стикер с аргументом 'this'
+                OpenSticker(index);
+                return;
+            }
+
+            // Остальные оверлеи (рация и т.д.)
+            var standardNote = NoteManager.GetDynamicNote(index, currentCharacterData);
+            overlayTitle.Text = standardNote.Title;
+            overlayBody.Text = standardNote.Body;
+            overlayPanel.Visible = true;
+        }
+
+        // Вспомогательный метод для корректного создания стикера
+        private void OpenSticker(int index)
+        {
             var note = NoteManager.GetDynamicNote(index, currentCharacterData);
 
-            overlayTitle.Text = note.Title;
-            overlayBody.Text = note.Body;
-            overlayPanel.Visible = true;
-            overlayPanel.BringToFront();
+            // Проверяем, не открыт ли уже такой стикер, чтобы не плодить копии
+            // (Для этого в Form1 должен быть список: private List<StickerFloatPanel> _activeStickers = new List<StickerFloatPanel>();)
+            var existing = _activeStickers.Find(s => s.Text == note.Title && !s.IsDisposed);
+            if (existing != null)
+            {
+                existing.BringToFront();
+                return;
+            }
+
+            // ПЕРЕДАЕМ 'this' четвертым аргументом (это и есть наш owner)
+            var sticker = new StickerFloatPanel(note.Title, note.Body, Cursor.Position, this);
+
+            _activeStickers.Add(sticker);
+            sticker.Show(this);
         }
 
-        private void HideOverlay()
-        {
-            overlayPanel.Visible = false;
-        }
+
+        private void HideOverlay() => overlayPanel.Visible = false;
 
         // ═══════════════════════════════════════════════════════════════════
         //  ПЕРСОНАЖ
         // ═══════════════════════════════════════════════════════════════════
         private void LoadCurrentCharacter()
         {
-            if (todayCast == null || currentCharacterIndex >= todayCast.Count)
-                return;
+            if (todayCast == null || currentCharacterIndex >= todayCast.Count) return;
 
             currentCharacterData = todayCast[currentCharacterIndex];
-
             currentCharacter?.Dispose();
             currentCharacter = currentCharacterData.Photo;
 
-            lblName.Text = currentCharacterData.Name;
+            // Закрываем панели предыдущего персонажа
+            CloseAllMonitorPanels();
+            CloseAllStickers();
+
+            // Сброс лога диалога для нового персонажа
+            ClearDialogueLog();
+            // Записываем начальное приветствие в лог
+            AddToDialogueLog(currentCharacterData.Name, currentCharacterData.Dialogue);
+
+            if (huntModeActive)
+                lblName.Text = $"{currentCharacterData.Name}  [{huntCorrect}/{huntWaveSize - 1} cleared]";
+            else
+                lblName.Text = currentCharacterData.Name;
+
             StartTypingEffect(currentCharacterData.Dialogue);
+
         }
+            internal void CloseAllStickers()
+        {
+            foreach (var s in _activeStickers.ToArray())
+            {
+                if (s != null && !s.IsDisposed) s.Close();
+            }
+            _activeStickers.Clear();
+        }
+    
 
         // ═══════════════════════════════════════════════════════════════════
-        //  ЭФФЕКТ ПЕЧАТАЮЩЕЙ МАШИНКИ
+        //  TYPING EFFECT
         // ═══════════════════════════════════════════════════════════════════
         private void StartTypingEffect(string text)
         {
@@ -485,7 +888,6 @@ namespace TheGatekeeper
             typingTimer.Start();
         }
 
-
         private void TypingTimer_Tick(object sender, EventArgs e)
         {
             if (typingIndex < fullDialogueText.Length)
@@ -493,108 +895,17 @@ namespace TheGatekeeper
                 lblDialogue.Text += fullDialogueText[typingIndex];
                 typingIndex++;
             }
-            else
-            {
-                typingTimer.Stop();
-            }
+            else typingTimer.Stop();
         }
 
-
         // ═══════════════════════════════════════════════════════════════════
-        //  КЛИК МЫШИ
+        //  ДИАЛОГ ДОПРОСА
         // ═══════════════════════════════════════════════════════════════════
-        private async void Form_MouseClick(object sender, MouseEventArgs e)
-        {
-            if (overlayPanel.Visible) return;
-
-            Point p = e.Location;
-
-            // 1. Проверяем интерактивные зоны
-            for (int i = 0; i < interactiveZones.Length; i++)
-            {
-                if (ScaleRect(interactiveZones[i]).Contains(p))
-                {
-                    // Рация открывает интерактивное окно с вопросами
-                    if (i == 9) // zoneRadioPanel
-                    {
-                        ShowQuestionDialog();
-                        return;
-                    }
-                    ShowOverlay(i);
-                    return;
-                }
-                if (ScaleRect(zoneDialogueScreen).Contains(p))
-                {
-                    OpenCharacterDialogue();
-                    return;
-                }
-            }
-
-            // 2. Проверяем кнопки решения
-            if (isAnimating) return;
-
-            Image nextBtn = null;
-            Color fColor = Color.Transparent;
-            string decision = "";
-
-            if (ScaleRect(redZoneBase).Contains(p))
-            {
-                nextBtn = btnRed;
-                fColor = Color.Red;
-                decision = "ROBOT";
-                dailyDecisions.Add((currentCharacterData, decision));
-            }
-            else if (ScaleRect(blueZoneBase).Contains(p))
-            {
-                nextBtn = btnBlue;
-                fColor = Color.DodgerBlue;
-                decision = "ALIEN";
-                dailyDecisions.Add((currentCharacterData, decision));
-            }
-            else if (ScaleRect(greenZoneBase).Contains(p))
-            {
-                nextBtn = btnGreen;
-                fColor = Color.Lime;
-                decision = "HUMAN";
-                dailyDecisions.Add((currentCharacterData, decision));
-            }
-
-            if (nextBtn == null) return;
-
-            isAnimating = true;
-            currentBtnImage = nextBtn;
-            pressureTimer.Stop();
-
-            StartTypingEffect($"Decision: {decision}. Processing...");
-            charactersChecked++;
-
-            if (charactersChecked >= dailyQuota)
-            {
-                await Task.Delay(1500);
-                ShowDaySummary();
-                return;
-            }
-
-            UpdateStatsUI();
-            StartFlash(fColor);
-            Redraw();
-
-            await Task.Delay(250);
-            currentBtnImage = btnDefault;
-
-            isClosing = true;
-            shutterTimer.Start();
-        }
         private void OpenCharacterDialogue() => ShowQuestionDialog();
 
-        
-        // ═══════════════════════════════════════════════════════════════════
-        //  ЗАМЕНИТЕ метод GenerateAnswer в Form1.cs на этот:
-        // ═══════════════════════════════════════════════════════════════════
-
-        private async void ShowQuestionDialog()
+        private void ShowQuestionDialog()
         {
-            var questionForm = new Form
+            var qForm = new Form
             {
                 Text = "INTERROGATION PROTOCOL",
                 Size = new Size(500, 400),
@@ -615,14 +926,23 @@ namespace TheGatekeeper
                 ForeColor = Color.Cyan
             };
 
-            var questions = new[]
-            {
-        "What is your access code?",
-        "Where are you coming from?",
-        "What is your purpose here?",
-        "Do you have family?",
-        "How do you feel today?"
-    };
+            // В режиме ОХОТЫ — добавляем специальный вопрос-ловушку
+            var questions = huntModeActive
+                ? new[] {
+                    "What is your access code?",
+                    "Where are you coming from?",
+                    "What is your purpose here?",
+                    "Do you have family?",
+                    "How do you feel today?",
+                    "[HUNT] Describe your biological composition."
+                  }
+                : new[] {
+                    "What is your access code?",
+                    "Where are you coming from?",
+                    "What is your purpose here?",
+                    "Do you have family?",
+                    "How do you feel today?"
+                  };
 
             int y = 60;
             foreach (var q in questions)
@@ -632,7 +952,9 @@ namespace TheGatekeeper
                     Text = q,
                     Location = new Point(20, y),
                     Size = new Size(440, 35),
-                    BackColor = Color.FromArgb(30, 50, 70),
+                    BackColor = q.StartsWith("[HUNT]")
+                        ? Color.FromArgb(60, 20, 20)
+                        : Color.FromArgb(30, 50, 70),
                     ForeColor = Color.FromArgb(200, 220, 240),
                     FlatStyle = FlatStyle.Flat,
                     Font = new Font("Consolas", 9),
@@ -641,16 +963,17 @@ namespace TheGatekeeper
                 btn.FlatAppearance.BorderColor = Color.FromArgb(51, 102, 170);
                 btn.Click += (s, e) =>
                 {
-                    questionForm.Close();
+                    qForm.Close();
                     string answer = CharacterAI.GenerateAnswer(currentCharacterData, q);
+                    LogQuestionAndAnswer(q, answer);  // записываем в лог
                     StartTypingEffect(answer);
                 };
-                questionForm.Controls.Add(btn);
+                qForm.Controls.Add(btn);
                 y += 45;
             }
 
-            questionForm.Controls.Add(lblInfo);
-            questionForm.ShowDialog(this);
+            qForm.Controls.Add(lblInfo);
+            qForm.ShowDialog(this);
         }
 
         // ═══════════════════════════════════════════════════════════════════
@@ -672,8 +995,9 @@ namespace TheGatekeeper
                     }
                     else
                     {
-                        ShowDaySummary();
+                        OnCastExhausted();
                     }
+
                     pressureSeconds = 0;
                     pressureTimer.Start();
                 }
@@ -688,6 +1012,41 @@ namespace TheGatekeeper
                 }
             }
             Redraw();
+        }
+
+        // Вызывается когда весь cast пройден
+        private void OnCastExhausted()
+        {
+            switch (currentMode)
+            {
+                case GameMode.StoryMode:
+                    if (day >= 10) ShowStoryEnding();
+                    else ShowDaySummary();
+                    break;
+
+                case GameMode.HuntMode:
+                    if (!huntVillainFound)
+                    {
+                        // Волна прошла, злодей не найден — штраф
+                        health--;
+                        if (health <= 0) { ShowHuntGameOver(false); return; }
+                        MessageBox.Show(
+                            $"Злодей прошёл незамеченным!\n-1 HP. Следующая волна сложнее.",
+                            "ОХОТА", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    }
+                    NextHuntWave();
+                    break;
+
+                case GameMode.EndlessMode:
+                    // Добавляем новую порцию персонажей
+                    day++;
+                    dailyQuota = Math.Min(dailyQuota + 1, 15);
+                    var newBatch = CharacterFactory.GenerateMixedCast(day, 2, 1, 1, 5);
+                    todayCast.AddRange(newBatch);
+                    LoadCurrentCharacter();
+                    UpdateModeLabel();
+                    break;
+            }
         }
 
         // ═══════════════════════════════════════════════════════════════════
@@ -715,8 +1074,23 @@ namespace TheGatekeeper
             if (lblScore == null) return;
             lblScore.Text = $"📊 {score}";
             lblHealth.Text = $"❤️ {health}";
-            lblDay.Text = $"📅 DAY {day}";
-            lblQuota.Text = $"📋 {charactersChecked}/{dailyQuota}";
+
+            switch (currentMode)
+            {
+                case GameMode.StoryMode:
+                    lblDay.Text = $"📅 ДЕНЬ {day}/10";
+                    lblQuota.Text = $"📋 {charactersChecked}/{dailyQuota}";
+                    break;
+                case GameMode.HuntMode:
+                    lblDay.Text = $"🎯 Волна {huntWave}";
+                    lblQuota.Text = $"📋 {charactersChecked}/{dailyQuota}";
+                    break;
+                case GameMode.EndlessMode:
+                    lblDay.Text = $"∞ LVL {day}";
+                    lblQuota.Text = $"📋 {endlessTotal}  ×{endlessStreak}";
+                    break;
+            }
+
             lblHealth.ForeColor = health <= 1 ? Color.Red : Color.Tomato;
         }
 
@@ -724,32 +1098,16 @@ namespace TheGatekeeper
         {
             pressureTimer.Stop();
 
-            // Создаём и показываем форму
-            var summaryForm = new DaySummaryForm(
-                day,
-                score,
-                health,
-                charactersChecked,
-                dailyQuota,
-                dailyDecisions
-            );
-
-            // Очищаем решения для следующего дня
+            var summaryForm = new DaySummaryForm(day, score, health,
+                charactersChecked, dailyQuota, dailyDecisions);
             dailyDecisions.Clear();
 
-            var result = summaryForm.ShowDialog(this);
+            summaryForm.ShowDialog(this);
 
             if (summaryForm.ContinueToNextDay)
-            {
                 StartNextDay();
-            }
             else
-            {
-                // Возврат в меню (можно просто закрыть игру или показать WelcomeForm)
                 this.Close();
-                // Если хотите вернуться в меню, замените на:
-                // Application.Restart();
-            }
         }
 
         private void StartNextDay()
@@ -757,24 +1115,16 @@ namespace TheGatekeeper
             day++;
             charactersChecked = 0;
             pressureSeconds = 0;
-            dailyQuota = Math.Min(3 + (day - 1), 10);
+            InitDailyQuota(); // переменная квота 3–7 по таблице
 
-            // Генерируем новый состав на следующий день
-            todayCast = CharacterFactory.GenerateMixedCast(
-                day,
-                guaranteedHumans: 1,
-                guaranteedRobots: 0,
-                guaranteedAliens: 0,
-                randomTypeCount: 4
-            );
-
-            StorySchedule.BuildStoryCast(day);
+            todayCast = storyModeActive
+                ? StorySchedule.BuildStoryCast(day, randomTypeCount: Math.Max(1, dailyQuota - 1))
+                : CharacterFactory.GenerateMixedCast(day, 1, 1, 0, Math.Max(1, dailyQuota - 2));
 
             currentCharacterIndex = 0;
             LoadCurrentCharacter();
-
-            lblDialogue.ForeColor = Color.Lime;
             UpdateStatsUI();
+            UpdateModeLabel();
             pressureTimer.Start();
             Redraw();
         }
@@ -789,19 +1139,35 @@ namespace TheGatekeeper
             lblPressure.ForeColor = c;
             lblPressure.Text = $"PRESSURE: {pct,3}%  [{bar}]";
         }
+
         private string GetCharacterMonitorText()
         {
-            if (currentCharacterData == null)
-                return "NO SUBJECT";
+            if (currentCharacterData == null) return "NO SUBJECT";
 
-            return
-                $"NAME: {currentCharacterData.Name}\n" +
-                $"TYPE: {currentCharacterData.Species}\n" +
-                $"JOB: {currentCharacterData.Occupation}\n" +
-                $"REASON: {currentCharacterData.ReasonToEnter}\n" +
-                $"DAY: {currentCharacterData.Day}";
+            string extra = "";
+            if (huntModeActive && ReferenceEquals(currentCharacterData, huntVillain))
+                extra = "\n⚠ BIOMETRIC ANOMALY";
+
+            // С Дня 5 подсказка о сложности вместо типа вида
+            string focusLine = currentCharacterData.Day >= 5
+                ? $"FOCUS: {GetDailyFocusHint(currentCharacterData.Day).Replace("FOCUS: ", "")}"
+                : $"TYPE:  {currentCharacterData.Species}";
+
+            return $"NAME:  {currentCharacterData.Name}\n" +
+                   $"JOB:   {currentCharacterData.Occupation}\n" +
+                   $"CODE:  {currentCharacterData.AccessCode ?? "N/A"}\n" +
+                   $"{focusLine}" +
+                   extra;
         }
-        
+
+        private void ShowGameOver()
+        {
+            pressureTimer.Stop();
+            MessageBox.Show(
+                "Слишком много ошибок.\nКолония отстранила вас от должности.\n\nИГРА ОКОНЧЕНА",
+                "ТРИБУНАЛ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            this.Close();
+        }
 
         // ═══════════════════════════════════════════════════════════════════
         //  РЕНДЕР
@@ -826,7 +1192,6 @@ namespace TheGatekeeper
             DrawClock(g);
             DrawMonitorText(g);
 
-
             if (frontBackground != null)
                 g.DrawImage(frontBackground, 0, 0, ClientSize.Width, ClientSize.Height);
 
@@ -842,74 +1207,46 @@ namespace TheGatekeeper
             }
 
             _buffer.Render();
-
         }
 
         private void DrawMonitorText(Graphics g)
         {
             Rectangle rect = ScaleRect(zoneRightScreen);
-
             using (Font font = new Font("Consolas", 9, FontStyle.Bold))
             using (SolidBrush brush = new SolidBrush(Color.Lime))
-            {
                 g.DrawString(GetCharacterMonitorText(), font, brush, rect);
-            }
-
         }
+
         private void DrawInteractiveGlow(Graphics g)
         {
             if (hoveredZone < 0) return;
-
             Rectangle r = ScaleRect(interactiveZones[hoveredZone]);
-
             using (GraphicsPath path = RoundedRect(r, 10))
             {
                 for (int i = 8; i >= 1; i--)
-                {
                     using (Pen p = new Pen(Color.FromArgb(18 * i, 0, 255, 255), i))
-                    {
                         g.DrawPath(p, path);
-                    }
-                }
-
                 using (SolidBrush br = new SolidBrush(Color.FromArgb(18, 0, 255, 255)))
-                {
                     g.FillPath(br, path);
-                }
             }
         }
+
         private GraphicsPath RoundedRect(Rectangle bounds, int radius)
         {
             int d = radius * 2;
-            GraphicsPath path = new GraphicsPath();
-
+            var path = new GraphicsPath();
             path.AddArc(bounds.X, bounds.Y, d, d, 180, 90);
             path.AddArc(bounds.Right - d, bounds.Y, d, d, 270, 90);
             path.AddArc(bounds.Right - d, bounds.Bottom - d, d, d, 0, 90);
             path.AddArc(bounds.X, bounds.Bottom - d, d, d, 90, 90);
-
             path.CloseFigure();
             return path;
         }
-        private string[] GetDayStickerTexts()
-        {
-            return new[]
-            {
-        $"DAY {day}",
-        $"CODE D-{day}X",
-        day < 3 ? "CHECK ID" : "CHECK SPEECH",
-        $"THREAT {Math.Min(day, 5)}"
-    };
-        }
-
-        
 
         private void DrawClock(Graphics g)
         {
             Rectangle zone = ScaleRect(zoneClock);
             int m = shiftSeconds / 60, s = shiftSeconds % 60;
-            string time = $"{m:D2}:{s:D2}";
-
             using (var font = new Font("Consolas", zone.Height * 0.45f, FontStyle.Bold, GraphicsUnit.Pixel))
             using (var br = new SolidBrush(Color.FromArgb(255, 0, 170, 255)))
             {
@@ -918,7 +1255,7 @@ namespace TheGatekeeper
                     Alignment = StringAlignment.Center,
                     LineAlignment = StringAlignment.Center
                 };
-                g.DrawString(time, font, br, zone, sf);
+                g.DrawString($"{m:D2}:{s:D2}", font, br, zone, sf);
             }
         }
 
@@ -941,8 +1278,7 @@ namespace TheGatekeeper
 
                 using (var br = new LinearGradientBrush(
                     new Rectangle(monitor.X, top, monitor.Width, Math.Max(1, slatH)),
-                    Color.FromArgb(210, 215, 225),
-                    Color.FromArgb(70, 75, 85),
+                    Color.FromArgb(210, 215, 225), Color.FromArgb(70, 75, 85),
                     LinearGradientMode.Vertical))
                 {
                     br.InterpolationColors = new ColorBlend(4)
@@ -959,8 +1295,7 @@ namespace TheGatekeeper
                 {
                     using (var br = new LinearGradientBrush(
                         new Rectangle(monitor.X, top + 2, monitor.Width, blickH + 1),
-                        Color.FromArgb(80, 255, 255, 255),
-                        Color.FromArgb(0, 255, 255, 255),
+                        Color.FromArgb(80, 255, 255, 255), Color.FromArgb(0, 255, 255, 255),
                         LinearGradientMode.Vertical))
                         g.FillRectangle(br, new Rectangle(monitor.X, top + 2, monitor.Width, blickH));
                 }
@@ -975,11 +1310,9 @@ namespace TheGatekeeper
             using (var sh = new LinearGradientBrush(area,
                 Color.FromArgb(100, 0, 0, 0), Color.Transparent, LinearGradientMode.Horizontal))
                 g.FillRectangle(sh, new Rectangle(monitor.X, monitor.Y, 20, scaledH));
-
             using (var sh = new LinearGradientBrush(area,
                 Color.Transparent, Color.FromArgb(100, 0, 0, 0), LinearGradientMode.Horizontal))
                 g.FillRectangle(sh, new Rectangle(monitor.Right - 20, monitor.Y, 20, scaledH));
-
             using (var p = new Pen(Color.FromArgb(180, 20, 22, 28), 3))
                 g.DrawLine(p, monitor.X, monitor.Y + scaledH - 1, monitor.Right, monitor.Y + scaledH - 1);
         }
@@ -1005,7 +1338,5 @@ namespace TheGatekeeper
 
         protected override void OnPaint(PaintEventArgs e) => Redraw();
         protected override void OnPaintBackground(PaintEventArgs e) { }
-
-
     }
 }

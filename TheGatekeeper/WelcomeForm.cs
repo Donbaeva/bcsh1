@@ -7,7 +7,6 @@ using System.Windows.Forms;
 
 namespace TheGatekeeper
 {
-    // Eliminates flicker: Panel with double-buffering explicitly enabled
     internal class BufferedPanel : Panel
     {
         public BufferedPanel()
@@ -36,15 +35,12 @@ namespace TheGatekeeper
         private BufferedPanel storyFade;
         private Image imgNormal;
         private Image imgGlitch;
-        private Form1 gameForm;
-
 
         private Label lblSkip;
         private readonly List<Panel> menuHitAreas = new List<Panel>();
 
         private int scanlineY = 0;
         private bool glitchActive = false;
-        private int glitchCycle = 0;
         private int menuSelectedIndex = 0;
         private int cursorBlink = 0;
         private int revealedLines = 0;
@@ -62,7 +58,9 @@ namespace TheGatekeeper
         private readonly string[] menuItems =
             { "START", "GAME MODE", "SAVED", "HOW TO PLAY", "EXIT" };
 
-        public TheGatekeeper.Models.GameMode SelectedMode { get; private set; } = TheGatekeeper.Models.GameMode.DailyQuota;
+        // ─── Текущий выбранный режим ─────────────────────────────────────────
+        public TheGatekeeper.Models.GameMode SelectedMode { get; private set; }
+            = TheGatekeeper.Models.GameMode.StoryMode;
 
         private readonly string[] storyLines =
         {
@@ -85,11 +83,9 @@ namespace TheGatekeeper
             GenerateStars();
             LoadImages();
             InitializeForm();
-            gameForm = new Form1();
         }
 
         // ── Stars ─────────────────────────────────────────────────────────────
-
         private void GenerateStars()
         {
             stars = new PointF[180];
@@ -111,7 +107,6 @@ namespace TheGatekeeper
         }
 
         // ── Images ────────────────────────────────────────────────────────────
-
         private void LoadImages()
         {
             string baseDir = AppDomain.CurrentDomain.BaseDirectory;
@@ -148,7 +143,6 @@ namespace TheGatekeeper
         }
 
         // ── Form setup ────────────────────────────────────────────────────────
-
         private void InitializeForm()
         {
             this.Text = "THE GATEKEEPER";
@@ -172,14 +166,12 @@ namespace TheGatekeeper
         }
 
         // ── MENU STATE ────────────────────────────────────────────────────────
-
         private void BuildMenuState()
         {
             menuPanel = new BufferedPanel { Dock = DockStyle.Fill };
             menuPanel.Paint += MenuPanel_Paint;
             this.Controls.Add(menuPanel);
 
-            // Photo — right 500px
             pbMenu = new PictureBox
             {
                 SizeMode = PictureBoxSizeMode.Zoom,
@@ -190,7 +182,6 @@ namespace TheGatekeeper
             };
             menuPanel.Controls.Add(pbMenu);
 
-            // Gradient fade between photo and background text
             menuFade = new BufferedPanel
             {
                 Location = new Point(this.ClientSize.Width - 510, 0),
@@ -208,7 +199,6 @@ namespace TheGatekeeper
             menuPanel.Controls.Add(menuFade);
             menuFade.BringToFront();
 
-            // Invisible click areas for menu items
             menuHitAreas.Clear();
             for (int i = 0; i < menuItems.Length; i++)
             {
@@ -246,12 +236,11 @@ namespace TheGatekeeper
         private void DrawMenuContent(Graphics g, int w, int h)
         {
             var m = GetMetrics(w, h);
-            // Sub-header
+
             using (var f = new Font("Courier New", m.SubHeaderFont))
             using (var b = new SolidBrush(Color.FromArgb(110, 0, 255, 255)))
                 g.DrawString("SECTOR-7  ·  ORBITAL GATE  ·  CHECKPOINT ALPHA", f, b, m.LeftX, m.SubHeaderY);
 
-            // Title
             string[] titleLines = { "THE", "GATE", "KEEPER" };
             float ty = m.TitleY;
             using (var titleBrush = new SolidBrush(Color.White))
@@ -269,11 +258,9 @@ namespace TheGatekeeper
                 }
             }
 
-            // Divider
             using (var pen = new Pen(Color.FromArgb(35, 0, 255, 255), 1f))
                 g.DrawLine(pen, m.LeftX, m.DividerY, m.LeftX + m.MenuWidth, m.DividerY);
 
-            // Menu items — plain text, no buttons
             for (int i = 0; i < menuItems.Length; i++)
             {
                 bool sel = i == menuSelectedIndex;
@@ -284,6 +271,12 @@ namespace TheGatekeeper
 
                 if (sel)
                 {
+                    // Рисуем цветную плашку-подсказку для выбранного режима
+                    if (i == 1)
+                    {
+                        DrawModeDescription(g, m, iy);
+                    }
+
                     using (var f = new Font("Courier New", m.MenuArrowFont, FontStyle.Bold))
                     using (var b = new SolidBrush(Color.FromArgb(220, 255, 0, 85)))
                         g.DrawString(">", f, b, m.ArrowX, iy + m.MenuItemTextOffsetY);
@@ -309,6 +302,17 @@ namespace TheGatekeeper
             }
         }
 
+        // Рисует маленькое описание режима под строкой GAME MODE
+        private void DrawModeDescription(Graphics g, Metrics m, int iy)
+        {
+            string desc = ModeDescription(SelectedMode);
+            Color col = ModeColor(SelectedMode);
+
+            using (var f = new Font("Courier New", m.SubHeaderFont))
+            using (var b = new SolidBrush(Color.FromArgb(140, col)))
+                g.DrawString(desc, f, b, m.MenuTextX, iy + m.MenuItemStep - 2);
+        }
+
         private void HandleMenuClick(int idx)
         {
             menuSelectedIndex = idx;
@@ -324,14 +328,40 @@ namespace TheGatekeeper
             menuPanel?.Invalidate();
         }
 
+        // ─── Метки режимов ───────────────────────────────────────────────────
         private static string ModeLabel(TheGatekeeper.Models.GameMode mode)
         {
             switch (mode)
             {
-                case TheGatekeeper.Models.GameMode.DailyQuota: return "Daily Quota";
-                case TheGatekeeper.Models.GameMode.FindTheVillain: return "Find the Villain";
-                case TheGatekeeper.Models.GameMode.CriticalMission: return "Critical Mission";
-                default: return "Daily Quota";
+                case TheGatekeeper.Models.GameMode.StoryMode: return "ПРОТОКОЛ ВРАТА";
+                case TheGatekeeper.Models.GameMode.HuntMode: return "ОХОТА";
+                case TheGatekeeper.Models.GameMode.EndlessMode: return "БЕСКОНЕЧНАЯ СМЕНА";
+                default: return "ПРОТОКОЛ ВРАТА";
+            }
+        }
+
+        private static string ModeDescription(TheGatekeeper.Models.GameMode mode)
+        {
+            switch (mode)
+            {
+                case TheGatekeeper.Models.GameMode.StoryMode:
+                    return "10 дней · сюжет · 7 концовок";
+                case TheGatekeeper.Models.GameMode.HuntMode:
+                    return "найди злодея среди толпы · один шанс";
+                case TheGatekeeper.Models.GameMode.EndlessMode:
+                    return "бесконечный поток · таблица рекордов";
+                default: return "";
+            }
+        }
+
+        private static Color ModeColor(TheGatekeeper.Models.GameMode mode)
+        {
+            switch (mode)
+            {
+                case TheGatekeeper.Models.GameMode.StoryMode: return Color.Cyan;
+                case TheGatekeeper.Models.GameMode.HuntMode: return Color.Tomato;
+                case TheGatekeeper.Models.GameMode.EndlessMode: return Color.Gold;
+                default: return Color.Cyan;
             }
         }
 
@@ -369,7 +399,6 @@ namespace TheGatekeeper
         }
 
         // ── STORY STATE ───────────────────────────────────────────────────────
-
         private void BuildStoryState()
         {
             storyPanel = new BufferedPanel { Dock = DockStyle.Fill, Visible = false };
@@ -377,7 +406,6 @@ namespace TheGatekeeper
             this.Controls.Add(storyPanel);
             storyPanel.BringToFront();
 
-            // Photo right side
             pbStory = new PictureBox
             {
                 SizeMode = PictureBoxSizeMode.Zoom,
@@ -388,7 +416,6 @@ namespace TheGatekeeper
             };
             storyPanel.Controls.Add(pbStory);
 
-            // Fade edge
             storyFade = new BufferedPanel
             {
                 Location = new Point(this.ClientSize.Width - 510, 0),
@@ -406,7 +433,6 @@ namespace TheGatekeeper
             storyPanel.Controls.Add(storyFade);
             storyFade.BringToFront();
 
-            // Skip — plain text label, bottom right
             lblSkip = new Label
             {
                 Text = "SKIP  //",
@@ -464,7 +490,6 @@ namespace TheGatekeeper
                     g.DrawString(line, f, b, textX, startY + i * lineH);
             }
 
-            // Blinking cursor after last line
             if (revealedLines > 0 && cursorBlink < 5)
             {
                 int li = Math.Min(revealedLines - 1, storyLines.Length - 1);
@@ -479,7 +504,6 @@ namespace TheGatekeeper
         }
 
         // ── Cinematic flow ────────────────────────────────────────────────────
-
         private void StartCinematic()
         {
             menuPanel.Visible = false;
@@ -531,10 +555,10 @@ namespace TheGatekeeper
             glitchTimer?.Stop();
             animationTimer?.Stop();
 
-            // Показываем игровое окно
+            // Создаём Form1 с выбранным режимом и показываем
+            var gameForm = new Form1(SelectedMode);
             gameForm.Show();
 
-            // Скрываем welcome вместо закрытия
             this.Hide();
         }
 
@@ -547,7 +571,6 @@ namespace TheGatekeeper
         }
 
         // ── Shared drawing ────────────────────────────────────────────────────
-
         private void DrawBackground(Graphics g, int w, int h)
         {
             g.Clear(Color.FromArgb(4, 5, 13));
@@ -556,7 +579,6 @@ namespace TheGatekeeper
             DrawNebula(g, w / 5f, h * 2 / 5f, 180, 110, Color.FromArgb(14, 0, 20, 50));
             DrawNebula(g, w / 2f, h, 350, 90, Color.FromArgb(12, 10, 0, 40));
 
-            // Stars — moderate twinkle, no per-star alpha spike
             long tick = Environment.TickCount;
             for (int i = 0; i < stars.Length; i++)
             {
@@ -647,10 +669,9 @@ namespace TheGatekeeper
         }
 
         // ── Animation timer ───────────────────────────────────────────────────
-
         private void StartAnimation()
         {
-            animationTimer = new Timer { Interval = 33 }; // ~30 fps
+            animationTimer = new Timer { Interval = 33 };
             animationTimer.Tick += (s, e) =>
             {
                 scanlineY += 4;
@@ -718,26 +739,10 @@ namespace TheGatekeeper
             int rightW = Clamp((int)(w * 0.46f), 420, 680);
             int fadeW = Clamp((int)(rightW * 0.18f), 70, 140);
 
-            if (pbMenu != null)
-            {
-                pbMenu.Location = new Point(w - rightW, 0);
-                pbMenu.Size = new Size(rightW, h);
-            }
-            if (menuFade != null)
-            {
-                menuFade.Location = new Point(w - rightW - fadeW, 0);
-                menuFade.Size = new Size(fadeW, h);
-            }
-            if (pbStory != null)
-            {
-                pbStory.Location = new Point(w - rightW, 0);
-                pbStory.Size = new Size(rightW, h);
-            }
-            if (storyFade != null)
-            {
-                storyFade.Location = new Point(w - rightW - fadeW, 0);
-                storyFade.Size = new Size(fadeW, h);
-            }
+            if (pbMenu != null) { pbMenu.Location = new Point(w - rightW, 0); pbMenu.Size = new Size(rightW, h); }
+            if (menuFade != null) { menuFade.Location = new Point(w - rightW - fadeW, 0); menuFade.Size = new Size(fadeW, h); }
+            if (pbStory != null) { pbStory.Location = new Point(w - rightW, 0); pbStory.Size = new Size(rightW, h); }
+            if (storyFade != null) { storyFade.Location = new Point(w - rightW - fadeW, 0); storyFade.Size = new Size(fadeW, h); }
         }
 
         private void LayoutMenuHitAreas()
@@ -756,34 +761,16 @@ namespace TheGatekeeper
 
         private struct Metrics
         {
-            public int LeftX;
-            public int ArrowX;
-            public int MenuTextX;
-            public int MenuWidth;
+            public int LeftX, ArrowX, MenuTextX, MenuWidth;
             public int SubHeaderY;
-            public float SubHeaderFont;
-            public float TitleFont;
-            public float TitleY;
-            public float TitleLineStep;
-            public int DividerY;
-            public int MenuStartY;
+            public float SubHeaderFont, TitleFont, TitleY, TitleLineStep;
+            public int DividerY, MenuStartY;
             public float MenuItemStep;
             public int MenuItemTextOffsetY;
-            public float MenuArrowFont;
-            public float MenuItemFontNormal;
-            public float MenuItemFontSelected;
-
-            public int StoryTextX;
-            public int StoryStartY;
-            public int StoryLineH;
-            public float StoryHeaderFont;
-            public float StoryNormalFont;
-            public float StoryBoldFont;
-            public float StoryWarnFont;
-            public float StoryCursorFont;
-
-            public int CursorW;
-            public int CursorH;
+            public float MenuArrowFont, MenuItemFontNormal, MenuItemFontSelected;
+            public int StoryTextX, StoryStartY, StoryLineH;
+            public float StoryHeaderFont, StoryNormalFont, StoryBoldFont, StoryWarnFont, StoryCursorFont;
+            public int CursorW, CursorH;
         }
 
         private Metrics GetMetrics(int w, int h)
@@ -815,7 +802,6 @@ namespace TheGatekeeper
                 MenuArrowFont = 11f * s,
                 MenuItemFontNormal = 11f * s,
                 MenuItemFontSelected = 12f * s,
-
                 StoryTextX = (int)(60 * s),
                 StoryStartY = (int)(80 * s),
                 StoryLineH = (int)(38 * s),
@@ -824,7 +810,6 @@ namespace TheGatekeeper
                 StoryBoldFont = 12f * s,
                 StoryWarnFont = 12f * s,
                 StoryCursorFont = 11f * s,
-
                 CursorW = Clamp((int)(7 * s), 5, 9),
                 CursorH = Clamp((int)(14 * s), 10, 18),
             };

@@ -6,56 +6,67 @@ namespace TheGatekeeper
 {
     public class ChecklistForm : Form
     {
+        private ProgressBar pbSuspicion;
+        private Label lblVerdict;
+
         public ChecklistForm()
         {
-            this.Size = new Size(250, 350);
-            this.FormBorderStyle = FormBorderStyle.None;
-            this.BackColor = Color.FromArgb(240, 230, 140); // Цвет стикера (Khaki)
-            this.StartPosition = FormStartPosition.CenterParent;
+            this.Text = "FIELD VERIFICATION";
+            this.Size = new Size(350, 450);
+            this.BackColor = Color.FromArgb(30, 35, 40);
+            this.ForeColor = Color.White;
+            this.FormBorderStyle = FormBorderStyle.FixedToolWindow;
 
-            Label title = new Label
-            {
-                Text = "SUBJECT VERIFICATION",
-                Font = new Font("Consolas", 10, FontStyle.Bold),
-                Bounds = new Rectangle(10, 10, 230, 20),
-                TextAlign = ContentAlignment.MiddleCenter
-            };
-
+            int y = 20;
             string[] checks = {
-                "Access Code Match",
-                "Natural Speech",
-                "Normal Body Temp",
-                "Human Pronouns (I/Me)",
-                "Emotional Response"
+                "Access Code Mismatch",
+                "Abnormal Temperature",
+                "Irregular Pulse",
+                "Speech Anomaly (We/Us)",
+                "Synthetic Eye Reflection"
             };
 
-            int y = 40;
             foreach (var text in checks)
             {
                 CheckBox cb = new CheckBox
                 {
                     Text = text,
-                    Bounds = new Rectangle(20, y, 210, 25),
-                    Font = new Font("Consolas", 9),
-                    FlatStyle = FlatStyle.Flat
+                    Location = new Point(20, y),
+                    Size = new Size(280, 30),
+                    Font = new Font("Consolas", 10f)
                 };
+                cb.CheckedChanged += UpdateSuspicion;
                 this.Controls.Add(cb);
-                y += 30;
+                y += 40;
             }
 
-            Button btnClose = new Button
+            // Шкала вероятности
+            Label lblProb = new Label { Text = "THREAT PROBABILITY:", Location = new Point(20, y + 20), Size = new Size(300, 20) };
+            pbSuspicion = new ProgressBar { Location = new Point(20, y + 45), Size = new Size(290, 20), Maximum = 100 };
+            lblVerdict = new Label
             {
-                Text = "OK",
-                Bounds = new Rectangle(85, 290, 80, 30),
-                FlatStyle = FlatStyle.Flat,
-                BackColor = Color.FromArgb(200, 190, 100)
+                Text = "STATUS: CLEAR",
+                Location = new Point(20, y + 75),
+                Size = new Size(300, 30),
+                Font = new Font("Consolas", 12, FontStyle.Bold),
+                ForeColor = Color.Lime
             };
-            btnClose.Click += (s, e) => this.Close();
-            this.Controls.Add(title);
-            this.Controls.Add(btnClose);
 
-            // Рисуем рамочку
-            this.Paint += (s, e) => e.Graphics.DrawRectangle(Pens.DarkGoldenrod, 0, 0, Width - 1, Height - 1);
+            this.Controls.AddRange(new Control[] { lblProb, pbSuspicion, lblVerdict });
+        }
+
+        private void UpdateSuspicion(object sender, EventArgs e)
+        {
+            int checkedCount = 0;
+            foreach (Control c in this.Controls)
+                if (c is CheckBox cb && cb.Checked) checkedCount++;
+
+            int probability = checkedCount * 20; // 5 пунктов по 20%
+            pbSuspicion.Value = probability;
+
+            if (probability == 0) { lblVerdict.Text = "STATUS: CLEAR"; lblVerdict.ForeColor = Color.Lime; }
+            else if (probability <= 40) { lblVerdict.Text = "STATUS: SUSPICIOUS"; lblVerdict.ForeColor = Color.Yellow; }
+            else { lblVerdict.Text = "STATUS: HIGH THREAT"; lblVerdict.ForeColor = Color.Red; }
         }
     }
 }

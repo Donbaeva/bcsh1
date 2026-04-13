@@ -45,9 +45,8 @@ namespace TheGatekeeper.Models
                 Console.WriteLine("ФАЙЛ НЕ НАЙДЕН!");
             }
         }
-        
 
-        // ЛЮДИ
+
         public class Human : Character
         {
             public string IdNumber { get; set; }

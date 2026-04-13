@@ -68,6 +68,12 @@
     <Compile Include="Form1_Overlay.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="Form1_StoryPatch.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="GameplayPatch.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Models\Character.cs" />
     <Compile Include="Models\CharacterDatabase.cs" />
     <Compile Include="Models\CharacterFactory.cs" />
@@ -75,7 +81,13 @@
     <Compile Include="Models\RadioData.cs" />
     <Compile Include="Models\SaveData.cs" />
     <Compile Include="Models\StickerData.cs" />
-    <Compile Include="Models\Storycharacters.cs" />
+    <Compile Include="Models\StickerFloatPanel.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Models\StoryCharacters.cs" />
+    <Compile Include="MonitorPanels.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="NoteManager.cs" />
     <Compile Include="OverlayManager.cs" />
     <Compile Include="Program.cs" />

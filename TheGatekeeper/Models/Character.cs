@@ -63,12 +63,11 @@ namespace TheGatekeeper.Models
     {
         public string SerialNumber { get; set; }
         public string Model { get; set; }
-        public Robot(string name, string dialogue, string serialNumber, string model,
+        public Robot(string name, string dialogue, string serialNumber, string occupation,
                      bool isObvious, int day = 1)
-            : base(name, dialogue, "Robot", isObvious, model, dialogue, day)
+            : base(name, dialogue, "Robot", isObvious, occupation, dialogue, day)
         {
             SerialNumber = serialNumber;
-            Model = model;
         }
     }
 

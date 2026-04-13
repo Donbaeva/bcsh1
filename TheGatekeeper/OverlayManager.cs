@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Windows.Forms;
 using TheGatekeeper.Models;
+using static TheGatekeeper.GenericOverlay;
 
 namespace TheGatekeeper
 {
@@ -18,6 +19,8 @@ namespace TheGatekeeper
         private StickerOverlay _stickerOverlay;
         private RadioOverlay _radioOverlay;
         private GenericOverlay _genericOverlay;
+        private FingerprintOverlay _fingerprintOverlay;
+        private RadiationOverlay _radiationOverlay;
 
         public int CurrentDay { get; set; } = 1;
         public Character CurrentCharacter { get; set; }
@@ -32,6 +35,8 @@ namespace TheGatekeeper
             _stickerOverlay = new StickerOverlay(_card);
             _radioOverlay = new RadioOverlay(_card);
             _genericOverlay = new GenericOverlay(_card);
+            _fingerprintOverlay = new FingerprintOverlay(_card);
+            _radiationOverlay = new RadiationOverlay(_card);
         }
 
         private void BuildBaseOverlay()
@@ -69,6 +74,7 @@ namespace TheGatekeeper
                 (_overlayPanel.Width - _card.Width) / 2,
                 (_overlayPanel.Height - _card.Height) / 2);
         }
+        
 
         private void DrawCardBorder(object sender, PaintEventArgs pe)
         {
@@ -133,6 +139,16 @@ namespace TheGatekeeper
             _overlayPanel.Visible = true;
             _overlayPanel.BringToFront();
         }
+        public void ShowFingerprint()
+        {
+            ShowCard();
+            _fingerprintOverlay.Show(CurrentCharacter, CurrentDay);
+        }
+        public void ShowRadiation()
+        {
+            ShowCard();
+            _radiationOverlay.Show(CurrentCharacter, CurrentDay);
+        }
 
         public void Hide()
         {
@@ -149,6 +165,8 @@ namespace TheGatekeeper
             _stickerOverlay.Hide();
             _radioOverlay.Hide();
             _genericOverlay.Hide();
+            _fingerprintOverlay?.Hide();
+            _radiationOverlay?.Hide();
         }
     }
 
@@ -915,6 +933,306 @@ namespace TheGatekeeper
             _lblTitle.Text = title;
             _lblBody.Text = body;
             ContentPanel.Visible = true;
+        }
+        
+    }
+    public class RadiationOverlay : BaseOverlayPanel
+    {
+        private Panel _displayPanel;
+        private Label _lblValue, _lblStatus, _lblAnalysis;
+        private Timer _animTimer;
+        private float _phase = 0f;
+        private float _currentRadiation = 0.12f;
+        private float _targetRadiation = 0.12f;
+        private bool _anomaly = false;
+
+        public RadiationOverlay(Panel card) : base(card) { }
+
+        protected override void BuildUI()
+        {
+            MakeTitle("RADIATION DOSIMETER // GEIGER-MÜLLER");
+            MakeDivider(46);
+
+            _displayPanel = new Panel
+            {
+                Location = new Point(20, 58),
+                Size = new Size(Card.Width - 40, 180),
+                BackColor = Color.FromArgb(255, 2, 8, 4)
+            };
+            _displayPanel.Paint += DrawRadiationDisplay;
+            ContentPanel.Controls.Add(_displayPanel);
+
+            _lblValue = new Label
+            {
+                Location = new Point(20, 248),
+                Size = new Size(200, 40),
+                ForeColor = Color.FromArgb(255, 0, 255, 100),
+                BackColor = Color.Transparent,
+                Font = new Font("Consolas", 22, FontStyle.Bold),
+                TextAlign = ContentAlignment.MiddleLeft
+            };
+            ContentPanel.Controls.Add(_lblValue);
+
+            var unitLabel = new Label
+            {
+                Location = new Point(165, 262),
+                Size = new Size(80, 18),
+                Text = "µSv/h",
+                ForeColor = Color.FromArgb(100, 200, 150),
+                BackColor = Color.Transparent,
+                Font = new Font("Consolas", 9)
+            };
+            ContentPanel.Controls.Add(unitLabel);
+
+            _lblStatus = new Label
+            {
+                Location = new Point(20, 294),
+                Size = new Size(Card.Width - 40, 20),
+                ForeColor = Color.FromArgb(180, 200, 200),
+                BackColor = Color.Transparent,
+                Font = new Font("Consolas", 9),
+                TextAlign = ContentAlignment.MiddleLeft
+            };
+            ContentPanel.Controls.Add(_lblStatus);
+
+            MakeDivider(320);
+
+            _lblAnalysis = new Label
+            {
+                Location = new Point(20, 328),
+                Size = new Size(Card.Width - 40, 100),
+                ForeColor = Color.FromArgb(200, 200, 180),
+                BackColor = Color.Transparent,
+                Font = new Font("Consolas", 9),
+                TextAlign = ContentAlignment.TopLeft
+            };
+            ContentPanel.Controls.Add(_lblAnalysis);
+
+            _animTimer = new Timer { Interval = 50 };
+            _animTimer.Tick += (s, e) =>
+            {
+                _phase += 0.1f;
+                _currentRadiation += (_targetRadiation - _currentRadiation) * 0.05f;
+                if (Math.Abs(_currentRadiation - _targetRadiation) < 0.001f)
+                    _currentRadiation = _targetRadiation;
+                _displayPanel?.Invalidate();
+                UpdateValueLabel();
+            };
+        }
+
+        private void DrawRadiationDisplay(object sender, PaintEventArgs pe)
+        {
+            var g = pe.Graphics;
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+            int w = _displayPanel.Width, h = _displayPanel.Height;
+
+            // Тёмно-зелёный фон с сеткой
+            g.Clear(Color.FromArgb(2, 8, 4));
+            using (var pen = new Pen(Color.FromArgb(20, 0, 200, 0), 1))
+            {
+                for (int x = 0; x < w; x += 20) g.DrawLine(pen, x, 0, x, h);
+                for (int y = 0; y < h; y += 20) g.DrawLine(pen, 0, y, w, y);
+            }
+
+            // Шкала (горизонтальный бар)
+            int barX = 40, barY = h / 2 - 10, barW = w - 80, barH = 20;
+            using (var backBrush = new SolidBrush(Color.FromArgb(20, 0, 100, 0)))
+                g.FillRectangle(backBrush, barX, barY, barW, barH);
+
+            // Закрашенная часть шкалы
+            float fillPercent = Math.Min(1f, _currentRadiation / 2.0f); // 2.0 µSv/h = 100%
+            int fillW = (int)(barW * fillPercent);
+            Color fillColor = _anomaly ? Color.OrangeRed : Color.Lime;
+            using (var fillBrush = new SolidBrush(Color.FromArgb(200, fillColor)))
+                g.FillRectangle(fillBrush, barX, barY, fillW, barH);
+
+            // Рамка шкалы
+            using (var pen = new Pen(Color.FromArgb(100, 0, 200, 0), 2))
+                g.DrawRectangle(pen, barX, barY, barW, barH);
+
+            // Метки
+            using (var font = new Font("Consolas", 8))
+            using (var brush = new SolidBrush(Color.FromArgb(150, 0, 200, 0)))
+            {
+                g.DrawString("0.0", font, brush, barX - 20, barY + 3);
+                g.DrawString("1.0", font, brush, barX + barW / 2 - 12, barY + 3);
+                g.DrawString("2.0", font, brush, barX + barW - 20, barY + 3);
+            }
+
+            // График щелчков Гейгера (имитация)
+            int points = w;
+            var pts = new PointF[points];
+            for (int i = 0; i < points; i++)
+            {
+                float t = i / (float)points * 10f + _phase;
+                float y = (float)(Math.Sin(t * 5) * 0.2 + Math.Sin(t * 23) * 0.1) * (0.5f + _currentRadiation);
+                pts[i] = new PointF(i, h / 2 + 40 + y * 30);
+            }
+            using (var pen = new Pen(Color.FromArgb(180, 0, 255, 0), 1.5f))
+                g.DrawLines(pen, pts);
+        }
+
+        private void UpdateValueLabel()
+        {
+            _lblValue.Text = $"{_currentRadiation:F2}";
+            _lblValue.ForeColor = _anomaly ? Color.OrangeRed : Color.FromArgb(0, 255, 100);
+        }
+
+        public void Show(Character character, int day)
+        {
+            ContentPanel.Visible = true;
+            var rnd = new Random();
+
+            _anomaly = character?.Species != "Human";
+            _targetRadiation = _anomaly ? (float)(0.5 + rnd.NextDouble() * 1.2) : (float)(0.08 + rnd.NextDouble() * 0.15);
+            _currentRadiation = _targetRadiation * 0.7f;
+            _phase = 0f;
+
+            _lblStatus.Text = _anomaly
+                ? "⚠  WARNING: Elevated radiation signature"
+                : "✓  Radiation level within normal background";
+            _lblStatus.ForeColor = _anomaly ? Color.OrangeRed : Color.Lime;
+
+            _lblAnalysis.Text = _anomaly
+                ? "Geiger counter indicates abnormal beta/gamma activity.\n" +
+                  "Possible internal radioisotope source.\n" +
+                  "Recommendation: secondary scan advised."
+                : "Background radiation consistent with civilian sector.\n" +
+                  "No artificial isotopes detected.\n" +
+                  "Subject is safe to approach.";
+
+            _animTimer.Start();
+        }
+
+        public new void Hide()
+        {
+            _animTimer?.Stop();
+            ContentPanel.Visible = false;
+        }
+    }
+
+    public class FingerprintOverlay : BaseOverlayPanel
+    {
+        private Panel _scanPanel;
+        private Label _lblStatus, _lblResult;
+        private Timer _animTimer;
+        private float _scanLineY = 0f;
+        private bool _scanComplete = false;
+        private bool _match = false;
+
+        public FingerprintOverlay(Panel card) : base(card) { }
+
+        protected override void BuildUI()
+        {
+            MakeTitle("FINGERPRINT SCANNER // BIOMETRIC ID");
+            MakeDivider(46);
+
+            _scanPanel = new Panel
+            {
+                Location = new Point(20, 58),
+                Size = new Size(300, 200),
+                BackColor = Color.FromArgb(255, 5, 10, 20)
+            };
+            _scanPanel.Paint += DrawScanPanel;
+            ContentPanel.Controls.Add(_scanPanel);
+
+            _lblStatus = new Label
+            {
+                Location = new Point(20, 270),
+                Size = new Size(Card.Width - 40, 24),
+                ForeColor = Color.Cyan,
+                BackColor = Color.Transparent,
+                Font = new Font("Consolas", 10, FontStyle.Bold),
+                TextAlign = ContentAlignment.MiddleLeft
+            };
+            ContentPanel.Controls.Add(_lblStatus);
+
+            MakeDivider(300);
+
+            _lblResult = new Label
+            {
+                Location = new Point(20, 308),
+                Size = new Size(Card.Width - 40, 100),
+                ForeColor = Color.LightGray,
+                BackColor = Color.Transparent,
+                Font = new Font("Consolas", 9),
+                TextAlign = ContentAlignment.TopLeft
+            };
+            ContentPanel.Controls.Add(_lblResult);
+
+            _animTimer = new Timer { Interval = 30 };
+            _animTimer.Tick += (s, e) =>
+            {
+                if (!_scanComplete)
+                {
+                    _scanLineY += 8f;
+                    if (_scanLineY >= _scanPanel.Height)
+                    {
+                        _scanLineY = 0;
+                        _scanComplete = true;
+                        _animTimer.Stop();
+                        _lblStatus.Text = _match ? "✓ MATCH CONFIRMED" : "✗ NO MATCH - UNKNOWN PRINT";
+                        _lblStatus.ForeColor = _match ? Color.Lime : Color.Red;
+                        _lblResult.Text = _match
+                            ? "Subject fingerprint matches civil database.\nClearance level: STANDARD.\nNo flags raised."
+                            : "Subject fingerprint not found in any known database.\nPossible synthetic epidermis or alien dermal pattern.\nRecommendation: FLAG FOR REVIEW.";
+                    }
+                }
+                _scanPanel?.Invalidate();
+            };
+        }
+
+        private void DrawScanPanel(object sender, PaintEventArgs pe)
+        {
+            var g = pe.Graphics;
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+            int w = _scanPanel.Width, h = _scanPanel.Height;
+
+            // Фон
+            g.Clear(Color.FromArgb(5, 10, 20));
+
+            // Рисуем стилизованный отпечаток пальца (дуги)
+            int centerX = w / 2, centerY = h / 2;
+            using (var pen = new Pen(Color.FromArgb(100, 150, 200), 2))
+            {
+                for (int i = 0; i < 6; i++)
+                {
+                    int radius = 30 + i * 12;
+                    g.DrawArc(pen, centerX - radius, centerY - radius - 10, radius * 2, radius * 2, 200, 140);
+                }
+            }
+
+            // Линия сканирования
+            if (!_scanComplete)
+            {
+                int lineY = (int)_scanLineY;
+                using (var pen = new Pen(Color.FromArgb(200, 0, 255, 255), 2))
+                    g.DrawLine(pen, 0, lineY, w, lineY);
+                using (var brush = new SolidBrush(Color.FromArgb(30, 0, 255, 255)))
+                    g.FillRectangle(brush, 0, lineY - 2, w, 4);
+            }
+
+            // Рамка
+            using (var pen = new Pen(Color.FromArgb(80, 100, 150), 1))
+                g.DrawRectangle(pen, 0, 0, w - 1, h - 1);
+        }
+
+        public void Show(Character character, int day)
+        {
+            ContentPanel.Visible = true;
+            _scanComplete = false;
+            _scanLineY = 0;
+            _match = (character?.Species == "Human");
+            _lblStatus.Text = "SCANNING...";
+            _lblStatus.ForeColor = Color.Cyan;
+            _lblResult.Text = "Place finger on scanner.\nAnalyzing dermal patterns...";
+            _animTimer.Start();
+        }
+
+        public new void Hide()
+        {
+            _animTimer?.Stop();
+            ContentPanel.Visible = false;
         }
     }
 }

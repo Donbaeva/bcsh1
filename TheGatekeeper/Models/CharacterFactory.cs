@@ -105,83 +105,89 @@ namespace TheGatekeeper.Models
         {
             var characters = new List<Character>();
 
-            // Сборка Людей (из папки "Люди" - гарантированно люди)
+            // ═══════════════════════════════════════════════════════════════
+            // ЛЮДИ
+            // ═══════════════════════════════════════════════════════════════
             for (int i = 0; i < humanCount; i++)
             {
                 var human = new Human(
                     CharacterDatabase.GetRandomName(),
-                    "", // Диалог будет сгенерирован позже
+                    "",
                     $"ID-{rnd.Next(1000, 9999)}",
                     CharacterDatabase.GetRandomProfession(),
                     CharacterDatabase.GetRandomReason(),
-                    rnd.Next(0, 10) > 2, // 80% нормальный человек
+                    rnd.Next(0, 10) > 2,
                     day
                 );
 
-                // Загружаем фото из папки "Люди"
                 human.Photo = GetRandomPhoto(humanPhotos);
-
-                // Генерируем приветствие
                 human.Dialogue = CharacterAI.GenerateGreeting(human);
+
+                // ← ДОБАВЬТЕ ЭТУ СТРОКУ:
+                human.AccessCode = GenerateAccessCode(day);
 
                 characters.Add(human);
             }
 
-            // Сборка Роботов (из папки "Роботы" - гарантированно роботы)
+            // ═══════════════════════════════════════════════════════════════
+            // РОБОТЫ
+            // ═══════════════════════════════════════════════════════════════
             for (int i = 0; i < robotCount; i++)
             {
+                // Используем человеческое имя и профессию для маскировки
+                string name = CharacterDatabase.GetRandomName();
+                string profession = CharacterDatabase.GetRandomProfession();
+                string serialNumber = $"SN-{rnd.Next(100, 999)}"; // внутренний, не виден игроку
+
                 var robot = new Robot(
-                    CharacterDatabase.GetRandomName(),
-                    "", // Диалог будет сгенерирован
-                    $"SN-{rnd.Next(100, 999)}",
-                    CharacterDatabase.GetRandomRobotModel(),
-                    rnd.Next(0, 10) > 4, // 60% очевидный робот
+                    name,
+                    "", // диалог сгенерируется позже
+                    serialNumber,
+                    profession, // <-- теперь это профессия, а не модель
+                    rnd.Next(0, 10) > 4,
                     day
                 );
 
-                // Загружаем фото из папки "Роботы"
                 robot.Photo = GetRandomPhoto(robotPhotos);
-
-                // Генерируем приветствие с учётом навыка маскировки
                 robot.Dialogue = CharacterAI.GenerateGreeting(robot);
+                robot.AccessCode = day > 2 && rnd.Next(0, 10) > 6
+                    ? GenerateAccessCode(day - 1)
+                    : GenerateAccessCode(day);
 
                 characters.Add(robot);
             }
-
-            // Сборка Пришельцев (из папки "Инопланетяне" - гарантированно пришельцы)
+            // ═══════════════════════════════════════════════════════════════
+            // ПРИШЕЛЬЦЫ
+            // ═══════════════════════════════════════════════════════════════
             for (int i = 0; i < alienCount; i++)
             {
                 var alien = new Alien(
                     CharacterDatabase.GetRandomAlienName(),
-                    "", // Диалог будет сгенерирован
+                    "",
                     CharacterDatabase.GetRandomAlienPlanet(),
                     rnd.Next(2, 8),
-                    rnd.Next(0, 10) > 5, // 50% очевидный пришелец
+                    rnd.Next(0, 10) > 5,
                     day
                 );
 
-                // Загружаем фото из папки "Инопланетяне"
                 alien.Photo = GetRandomPhoto(alienPhotos);
-
-                // Генерируем приветствие с учётом навыка маскировки
                 alien.Dialogue = CharacterAI.GenerateGreeting(alien);
+
+                // ← ДОБАВЬТЕ ЭТУ СТРОКУ:
+                alien.AccessCode = GenerateAccessCode(day);
 
                 characters.Add(alien);
             }
 
-            // Перемешиваем список
             return characters.OrderBy(x => rnd.Next()).ToList();
         }
 
-        /// <summary>
-        /// Создаёт персонажа со СЛУЧАЙНЫМ типом из папки "Персонажи"
-        /// ИИ сам решает: человек, робот или пришелец
-        /// </summary>
+        // ═══════════════════════════════════════════════════════════════════
+        // ПЕРСОНАЖИ СЛУЧАЙНОГО ТИПА
+        // ═══════════════════════════════════════════════════════════════════
         public static Character GenerateRandomTypeCharacter(int day)
         {
-            // ИИ случайно выбирает тип (0 = Human, 1 = Robot, 2 = Alien)
             int randomType = rnd.Next(0, 3);
-
             Character character = null;
 
             switch (randomType)
@@ -196,6 +202,8 @@ namespace TheGatekeeper.Models
                         rnd.Next(0, 10) > 2,
                         day
                     );
+                    // ← ДОБАВЬТЕ:
+                    character.AccessCode = GenerateAccessCode(day);
                     break;
 
                 case 1: // Робот
@@ -203,10 +211,13 @@ namespace TheGatekeeper.Models
                         CharacterDatabase.GetRandomName(),
                         "",
                         $"SN-{rnd.Next(100, 999)}",
-                        CharacterDatabase.GetRandomRobotModel(),
+                        CharacterDatabase.GetRandomProfession(), // ← профессия
                         rnd.Next(0, 10) > 4,
                         day
                     );
+                    character.AccessCode = day > 2 && rnd.Next(0, 10) > 6
+                        ? GenerateAccessCode(day - 1)
+                        : GenerateAccessCode(day);
                     break;
 
                 case 2: // Пришелец
@@ -218,10 +229,11 @@ namespace TheGatekeeper.Models
                         rnd.Next(0, 10) > 5,
                         day
                     );
+                    // ← ДОБАВЬТЕ:
+                    character.AccessCode = GenerateAccessCode(day);
                     break;
             }
 
-            // Загружаем фото из папки "Персонажи" (ИИ сам определил тип)
             if (character != null)
             {
                 character.Photo = GetRandomPhoto(randomCharacterPhotos);
@@ -230,6 +242,26 @@ namespace TheGatekeeper.Models
 
             return character;
         }
+
+        // ═══════════════════════════════════════════════════════════════════
+        // ГЕНЕРАТОР КОДОВ ДОСТУПА
+        // ═══════════════════════════════════════════════════════════════════
+        private static string GenerateAccessCode(int day)
+        {
+            // Базовые префиксы для разных зон
+            string[] zonePrefixes = { "7741", "3392", "5521", "8834", "2219", "6657" };
+            string[] suffixes = { "X", "K", "M", "Z", "Q", "P", "R", "T" };
+
+            // Выбираем префикс с учётом дня (чтобы коды менялись каждый день)
+            int prefixIndex = (day - 1) % zonePrefixes.Length;
+            string prefix = zonePrefixes[prefixIndex];
+
+            // Случайный суффикс
+            string suffix = suffixes[rnd.Next(suffixes.Length)];
+
+            return $"{prefix}-{suffix}";
+        }
+        
 
         /// <summary>
         /// Генерирует группу персонажей, где часть из конкретных папок, 
@@ -258,5 +290,6 @@ namespace TheGatekeeper.Models
             var cast = GenerateDayCast(day, 1, 0, 0);
             return cast.Count > 0 ? cast[0] : null;
         }
+
     }
 }

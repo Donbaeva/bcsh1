@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using static TheGatekeeper.Models.Character;
 
 namespace TheGatekeeper.Models
 {

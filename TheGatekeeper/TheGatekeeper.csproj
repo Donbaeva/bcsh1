@@ -75,6 +75,7 @@
     <Compile Include="Models\RadioData.cs" />
     <Compile Include="Models\SaveData.cs" />
     <Compile Include="Models\StickerData.cs" />
+    <Compile Include="Models\Storycharacters.cs" />
     <Compile Include="NoteManager.cs" />
     <Compile Include="OverlayManager.cs" />
     <Compile Include="Program.cs" />
@@ -146,148 +147,148 @@
     <Content Include="Images\Background\image_4.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\роботы\ч1.png">
+    <Content Include="Images\Characters\роботы\robot_01.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\персонажи с сюжетом\ч2.png">
+    <Content Include="Images\Characters\персонажи с сюжетом\Clauddee.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\роботы\ч3.png">
+    <Content Include="Images\Characters\роботы\robot_03.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\персонажи\ч57.png">
+    <Content Include="Images\Characters\персонажи\character_30.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\персонажи с сюжетом\ч56.png">
+    <Content Include="Images\Characters\персонажи с сюжетом\Pam.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\персонажи\ч55.png">
+    <Content Include="Images\Characters\персонажи\character_29.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\роботы\ч54.png">
+    <Content Include="Images\Characters\роботы\robot_04.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\персонажи\ч53.png">
+    <Content Include="Images\Characters\персонажи\character_28.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\персонажи с сюжетом\ч52.png">
+    <Content Include="Images\Characters\персонажи с сюжетом\Lum.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\персонажи с сюжетом\ч51.png">
+    <Content Include="Images\Characters\персонажи с сюжетом\Sam.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\персонажи\ч50.png">
+    <Content Include="Images\Characters\персонажи\character_27.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\персонажи с сюжетом\ч49.png">
+    <Content Include="Images\Characters\персонажи с сюжетом\E.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\персонажи с сюжетом\ч48.png">
+    <Content Include="Images\Characters\персонажи с сюжетом\Nanami.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\персонажи с сюжетом\ч47.png">
+    <Content Include="Images\Characters\персонажи с сюжетом\Jack.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\персонажи с сюжетом\ч46.png">
+    <Content Include="Images\Characters\персонажи с сюжетом\Len.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\персонажи\ч45.png">
+    <Content Include="Images\Characters\персонажи\character_25.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\инопланетяне\ч44.png">
+    <Content Include="Images\Characters\инопланетяне\alien_04.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\персонажи\ч43.png">
+    <Content Include="Images\Characters\персонажи\character_24.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\персонажи с сюжетом\ч42.png">
+    <Content Include="Images\Characters\персонажи с сюжетом\Aidai.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\персонажи\ч41.png">
+    <Content Include="Images\Characters\персонажи\character_23.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\персонажи\ч40.png">
+    <Content Include="Images\Characters\персонажи\character_22.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\персонажи\ч39.png">
+    <Content Include="Images\Characters\персонажи\character_20.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\персонажи\ч38.png">
+    <Content Include="Images\Characters\персонажи\character_19.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\инопланетяне\ч37.png">
+    <Content Include="Images\Characters\инопланетяне\alien_03.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\персонажи с сюжетом\ч36.png">
+    <Content Include="Images\Characters\персонажи с сюжетом\Dr_Moon.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\персонажи\ч35.png">
+    <Content Include="Images\Characters\персонажи\character_18.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\персонажи\ч34.png">
+    <Content Include="Images\Characters\персонажи\character_17.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\персонажи\ч33.png">
+    <Content Include="Images\Characters\персонажи\character_16.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\персонажи\ч31.png">
+    <Content Include="Images\Characters\персонажи\character_14.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\персонажи с сюжетом\ч30.png">
+    <Content Include="Images\Characters\персонажи с сюжетом\Commander_Felicia.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\персонажи с сюжетом\ч29.png">
+    <Content Include="Images\Characters\персонажи с сюжетом\Pier.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\инопланетяне\ч28.png">
+    <Content Include="Images\Characters\инопланетяне\alien_02.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\персонажи\ч32.png">
+    <Content Include="Images\Characters\персонажи\character_15.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\роботы\ч27.png">
+    <Content Include="Images\Characters\роботы\robot_02.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\персонажи\ч26.png">
+    <Content Include="Images\Characters\персонажи\character_13.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\персонажи\ч25.png">
+    <Content Include="Images\Characters\персонажи\character_12.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\персонажи с сюжетом\ч24.png">
+    <Content Include="Images\Characters\персонажи с сюжетом\Fellion.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\персонажи\ч23.png">
+    <Content Include="Images\Characters\персонажи\character_11.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\инопланетяне\ч22.png">
+    <Content Include="Images\Characters\инопланетяне\alien_01.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\персонажи\ч21.png">
+    <Content Include="Images\Characters\персонажи\character_10.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\персонажи\ч20.png">
+    <Content Include="Images\Characters\персонажи\character_09.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\персонажи\ч19.png">
+    <Content Include="Images\Characters\персонажи\character_08.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\персонажи\ч18.png">
+    <Content Include="Images\Characters\персонажи\character_07.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\персонажи\ч16.png">
+    <Content Include="Images\Characters\персонажи\character_06.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\персонажи с сюжетом\ч15.png">
+    <Content Include="Images\Characters\персонажи с сюжетом\Ivana.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\персонажи\ч14.png">
+    <Content Include="Images\Characters\персонажи\character_05.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\персонажи\ч13.png">
+    <Content Include="Images\Characters\персонажи\character_04.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\персонажи\ч12.png">
+    <Content Include="Images\Characters\персонажи\character_03.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Images\Characters\персонажи\character_02.png">
@@ -296,22 +297,22 @@
     <Content Include="Images\Characters\персонажи\character_01.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\персонажи\ч9.png">
+    <Content Include="Images\Characters\персонажи\character_33.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\персонажи\ч8.png">
+    <Content Include="Images\Characters\персонажи\character_32.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\роботы\ч7.png">
+    <Content Include="Images\Characters\роботы\robot_05.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\персонажи\ч6.png">
+    <Content Include="Images\Characters\персонажи\character_31.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\персонажи\ч5.png">
+    <Content Include="Images\Characters\персонажи\character_26.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Characters\персонажи\ч4.png">
+    <Content Include="Images\Characters\персонажи\character_21.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Sounds\Voices\alien.wav" />

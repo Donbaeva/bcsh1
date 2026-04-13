@@ -172,16 +172,19 @@ namespace TheGatekeeper
             // ═══════════════════════════════════════════════════════════════
             // 7. ГЕНЕРАЦИЯ ПЕРСОНАЖЕЙ
             // ═══════════════════════════════════════════════════════════════
-            todayCast = CharacterFactory.GenerateMixedCast(
-                day,
-                guaranteedHumans: 1,
-                guaranteedRobots: 0,
-                guaranteedAliens: 0,
-                randomTypeCount: 4
-            );
+            //todayCast = CharacterFactory.GenerateMixedCast(
+            //    day,
+            //    guaranteedHumans: 1,
+            //    guaranteedRobots: 0,
+            //    guaranteedAliens: 0,
+            //    randomTypeCount: 4
+            //);
 
-            currentCharacterIndex = 0;
-            LoadCurrentCharacter();  // Вызывает StartTypingEffect → использует typingTimer
+
+            //currentCharacterIndex = 0;
+            //LoadCurrentCharacter();  // Вызывает StartTypingEffect → использует typingTimer
+
+            StorySchedule.BuildStoryCast(day);
 
             // ═══════════════════════════════════════════════════════════════
             // 8. СОБЫТИЯ МЫШИ И КЛАВИАТУРЫ
@@ -765,6 +768,8 @@ namespace TheGatekeeper
                 randomTypeCount: 4
             );
 
+            StorySchedule.BuildStoryCast(day);
+
             currentCharacterIndex = 0;
             LoadCurrentCharacter();
 
@@ -1000,5 +1005,7 @@ namespace TheGatekeeper
 
         protected override void OnPaint(PaintEventArgs e) => Redraw();
         protected override void OnPaintBackground(PaintEventArgs e) { }
+
+
     }
 }

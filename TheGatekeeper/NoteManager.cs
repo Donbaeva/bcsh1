@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using TheGatekeeper.Models;
+using static TheGatekeeper.Models.Character;
 
 namespace TheGatekeeper
 {

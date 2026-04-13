@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Drawing;
+using System.IO;
 
 namespace TheGatekeeper.Models
 {
@@ -31,57 +32,58 @@ namespace TheGatekeeper.Models
             ReasonToEnter = reason;
             Day = day;
         }
-
-        // Утилита: установить фото из пути (безопасно для работы с путями)
         public void SetPhotoFromFile(string path)
         {
-            if (string.IsNullOrEmpty(path))
+            Console.WriteLine($"Попытка загрузки фото: {path}"); // Добавьте это
+            if (File.Exists(path))
             {
-                Photo = null;
-                return;
+                Photo = Image.FromFile(path);
+                Console.WriteLine("Успешно загружено!");
             }
-
-            Photo?.Dispose();
-            Photo = Image.FromFile(path);
+            else
+            {
+                Console.WriteLine("ФАЙЛ НЕ НАЙДЕН!");
+            }
         }
-    }
+        
 
-    // ЛЮДИ
-    public class Human : Character
-    {
-        public string IdNumber { get; set; }
-        public Human(string name, string dialogue, string idNumber, string occupation,
-                     string reason, bool isObvious, int day = 1)
-            : base(name, dialogue, "Human", isObvious, occupation, reason, day)
+        // ЛЮДИ
+        public class Human : Character
         {
-            IdNumber = idNumber;
+            public string IdNumber { get; set; }
+            public Human(string name, string dialogue, string idNumber, string occupation,
+                         string reason, bool isObvious, int day = 1)
+                : base(name, dialogue, "Human", isObvious, occupation, reason, day)
+            {
+                IdNumber = idNumber;
+            }
         }
-    }
 
-    // РОБОТЫ
-    public class Robot : Character
-    {
-        public string SerialNumber { get; set; }
-        public string Model { get; set; }
-        public Robot(string name, string dialogue, string serialNumber, string occupation,
-                     bool isObvious, int day = 1)
-            : base(name, dialogue, "Robot", isObvious, occupation, dialogue, day)
+        // РОБОТЫ
+        public class Robot : Character
         {
-            SerialNumber = serialNumber;
+            public string SerialNumber { get; set; }
+            public string Model { get; set; }
+            public Robot(string name, string dialogue, string serialNumber, string occupation,
+                         bool isObvious, int day = 1)
+                : base(name, dialogue, "Robot", isObvious, occupation, dialogue, day)
+            {
+                SerialNumber = serialNumber;
+            }
         }
-    }
 
-    // ПРИШЕЛЬЦЫ
-    public class Alien : Character
-    {
-        public string HomePlanet { get; set; }
-        public int Tentacles { get; set; }
-        public Alien(string name, string dialogue, string homePlanet, int tentacles,
-                     bool isObvious, int day = 1)
-            : base(name, dialogue, "Alien", isObvious, "Observer", dialogue, day)
+        // ПРИШЕЛЬЦЫ
+        public class Alien : Character
         {
-            HomePlanet = homePlanet;
-            Tentacles = tentacles;
+            public string HomePlanet { get; set; }
+            public int Tentacles { get; set; }
+            public Alien(string name, string dialogue, string homePlanet, int tentacles,
+                         bool isObvious, int day = 1)
+                : base(name, dialogue, "Alien", isObvious, "Observer", dialogue, day)
+            {
+                HomePlanet = homePlanet;
+                Tentacles = tentacles;
+            }
         }
     }
 }

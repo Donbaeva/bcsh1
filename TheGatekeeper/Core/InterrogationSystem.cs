@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
 using TheGatekeeper.Models;
@@ -592,7 +593,7 @@ namespace TheGatekeeper
         {
             var r = new Random(); string occ = c.Occupation ?? "general work";
             if (c is Character.Robot && c.Day <= 2) return $"I am assigned to {occ}. It is in my operational parameters.";
-            string[] opts ={$"I work as {occ}.",$"{occ}.It's on the permit.",$"My job is {occ}.",$"I'm a {occ}."};
+            string[] opts ={$"I work as {occ}.",$"{occ}. It's on the permit.",$"My job is {occ}.",$"I'm a {occ}."};
             return opts[r.Next(opts.Length)];
         }
 

@@ -45,6 +45,7 @@
   </ItemGroup>
   <ItemGroup>
     <!-- ═══ ENTRY POINT ═══ -->
+    <Compile Include="Core\InterrogationSystem.cs" />
     <Compile Include="Program.cs" />
     <!-- ═══ CORE — Form1 и partial классы ═══ -->
     <Compile Include="Core\Form1.cs">
@@ -53,9 +54,15 @@
     <Compile Include="Core\Form1.Designer.cs">
       <DependentUpon>Form1.cs</DependentUpon>
     </Compile>
-    <Compile Include="Core\Form1_Input.cs" />
-    <Compile Include="Core\Form1_StoryPatch.cs" />
-    <Compile Include="Core\GameplayPatch.cs" />
+    <Compile Include="Core\Form1_Input.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Core\Form1_StoryPatch.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Core\GameplayPatch.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <!-- ═══ MODELS — данные ═══ -->
     <Compile Include="Models\Character.cs" />
     <Compile Include="Models\CharacterDatabase.cs" />
@@ -67,13 +74,21 @@
     <Compile Include="Story\StoryRadioData.cs" />
     <!-- ═══ UI — интерфейс ═══ -->
     <Compile Include="UI\OverlayManager.cs" />
-    <Compile Include="UI\MonitorPanels.cs" />
-    <Compile Include="UI\NoteManager.cs" />
-    <Compile Include="UI\StickerFloatPanel.cs" />
-    <Compile Include="UI\DaySummaryForm.cs" />
-    <Compile Include="UI\TutorialAndShiftEnd.cs" />
-    <Compile Include="UI\WelcomeForm.cs">
+    <Compile Include="UI\MonitorPanels.cs">
       <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\NoteManager.cs" />
+    <Compile Include="UI\StickerFloatPanel.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\DaySummaryForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\TutorialAndShiftEnd.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\WelcomeForm.cs">
+      <SubType>Component</SubType>
     </Compile>
     <!-- ═══ UTILS — утилиты ═══ -->
     <Compile Include="Utils\CharacterAI.cs" />

@@ -1162,7 +1162,6 @@ namespace TheGatekeeper
             DrawObserverPassButton(g);
             DrawTutorialUI(g);
 
-
             if (currentBtnImage != null)
                 g.DrawImage(currentBtnImage, 0, 0, ClientSize.Width, ClientSize.Height);
 

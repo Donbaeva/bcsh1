@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -894,7 +894,7 @@ namespace TheGatekeeper
         {
             ContentPanel.Visible = true;
             int dayIdx = Math.Min(day - 1, _radioByDay.Length - 1);
-            _lblMessages.Text = string.Join("\n\n", _radioByDay[dayIdx]);
+            _lblMessages.Text = StoryRadioData.GetMessages(day);
             _staticTimer.Start();
         }
 

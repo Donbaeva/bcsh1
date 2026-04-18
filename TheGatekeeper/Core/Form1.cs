@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -135,7 +135,7 @@ namespace TheGatekeeper
 
             _bufCtx = BufferedGraphicsManager.Current;
             ReallocBuffer();
-            this.Resize += (s, e) => ReallocBuffer();
+            this.Resize += (s, e) => { ReallocBuffer(); UpdateDialoguePosition(); };
 
             interactiveZones = new[]
             {
@@ -149,8 +149,9 @@ namespace TheGatekeeper
 
             flashTimer = new Timer { Interval = 30 };
             flashTimer.Tick += FlashTimer_Tick;
+            InitButtonGlow();
 
-            typingTimer = new Timer { Interval = 30 };
+            typingTimer = new Timer { Interval = 12 };
             typingTimer.Tick += TypingTimer_Tick;
 
             pressureTimer = new Timer { Interval = 1000 };
@@ -173,8 +174,8 @@ namespace TheGatekeeper
             // Инициализируем cast по режиму
             InitModeSession();
 
-            this.MouseClick += Form_MouseClick;
-            this.MouseMove += Form_MouseMove;
+            this.MouseClick += Form_MouseClick_New;
+            this.MouseMove += Form_MouseMove_New;
             this.KeyDown += (s, e) =>
             {
                 if (e.KeyCode == Keys.Escape)
@@ -208,8 +209,10 @@ namespace TheGatekeeper
                     StoryFlags.MirraBetrayed = false;
                     StoryFlags.ServX1Passed = false;
                     day = 1;
-                    InitDailyQuota(); // таблица: день 1 = 3 персонажа
+                    InitDailyQuota();
                     todayCast = StorySchedule.BuildStoryCast(day, randomTypeCount: Math.Max(1, dailyQuota - 1));
+                    if (day == 1) StartTutorialPhase();
+                    else LoadCurrentCharacter();
                     break;
 
                 case GameMode.HuntMode:
@@ -231,7 +234,7 @@ namespace TheGatekeeper
             }
 
             currentCharacterIndex = 0;
-            LoadCurrentCharacter();
+            if (!_tutorialActive) LoadCurrentCharacter();
             UpdateModeLabel();
             UpdateStatsUI();
         }
@@ -293,69 +296,6 @@ namespace TheGatekeeper
         // ═══════════════════════════════════════════════════════════════════
         //  MOUSE / KEYBOARD
         // ═══════════════════════════════════════════════════════════════════
-        private void Form_MouseMove(object sender, MouseEventArgs e)
-        {
-            int newHovered = -1;
-            for (int i = 0; i < interactiveZones.Length; i++)
-                if (ScaleRect(interactiveZones[i]).Contains(e.Location)) { newHovered = i; break; }
-
-            if (hoveredZone != newHovered)
-            {
-                hoveredZone = newHovered;
-                Cursor = hoveredZone >= 0 ? Cursors.Hand : Cursors.Default;
-                Redraw();
-            }
-        }
-
-        private async void Form_MouseClick(object sender, MouseEventArgs e)
-        {
-            if (overlayPanel.Visible) return;
-
-            Point p = e.Location;
-
-            for (int i = 0; i < interactiveZones.Length; i++)
-            {
-                if (ScaleRect(interactiveZones[i]).Contains(p))
-                {
-                    if (i == 9) { ShowQuestionDialog(); return; }
-                    ShowOverlay(i);
-                    return;
-                }
-            }
-
-            if (ScaleRect(zoneDialogueScreen).Contains(p))
-            {
-                ShowDialogueLog(); // открыть лог диалога
-                return;
-            }
-
-            if (isAnimating || currentCharacterData == null) return;
-
-            Image nextBtn = null;
-            Color fColor = Color.Transparent;
-            string decision = "";
-
-            if (ScaleRect(redZoneBase).Contains(p)) { nextBtn = btnRed; fColor = Color.Red; decision = "ROBOT"; }
-            else if (ScaleRect(blueZoneBase).Contains(p)) { nextBtn = btnBlue; fColor = Color.DodgerBlue; decision = "ALIEN"; }
-            else if (ScaleRect(greenZoneBase).Contains(p)) { nextBtn = btnGreen; fColor = Color.Lime; decision = "HUMAN"; }
-
-            if (nextBtn == null) return;
-
-            isAnimating = true;
-            currentBtnImage = nextBtn;
-            pressureTimer.Stop();
-
-            StartFlash(fColor);
-            Redraw();
-            await Task.Delay(250);
-            currentBtnImage = btnDefault;
-
-            // Обрабатываем решение по текущему режиму
-            await ProcessDecision(decision);
-
-            isClosing = true;
-            shutterTimer.Start();
-        }
 
         // ─── Центральный диспетчер решений ──────────────────────────────────
         private async Task ProcessDecision(string decision)
@@ -624,9 +564,10 @@ namespace TheGatekeeper
                 TextAlign = ContentAlignment.MiddleLeft,
                 Padding = new Padding(10, 4, 10, 4)
             };
-            Rectangle zone = ScaleRect(zoneDialogueScreen);
-            lblDialogue.Location = zone.Location;
-            lblDialogue.Size = zone.Size;
+            // Позиция lblDialogue задаётся через zoneDialogueScreen — НЕ нужен ScaleControl
+            // Обновляется при Resize через обработчик ниже
+            lblDialogue.Location = new Point(0, 0); // временно, обновится в UpdateDialoguePosition()
+            lblDialogue.Size = new Size(100, 40);
 
             // Плашка режима — правый верхний угол
             lblMode = new Label
@@ -641,8 +582,9 @@ namespace TheGatekeeper
             };
 
             foreach (var c in new Control[]
-                { lblScore, lblHealth, lblDay, lblQuota, lblPressure, lblName, lblDialogue, lblMode })
+                { lblScore, lblHealth, lblDay, lblQuota, lblPressure, lblName, lblMode })
                 ScaleControl(c);
+            UpdateDialoguePosition(); // позиция диалога — отдельно через ScaleRect
 
             this.Controls.AddRange(new Control[]
                 { lblScore, lblHealth, lblDay, lblQuota, lblPressure, lblName, lblDialogue, lblMode });
@@ -807,6 +749,13 @@ namespace TheGatekeeper
                 return;
             }
 
+            // index 7 = zoneRightScreen — показываем документы субъекта
+            if (index == 7)
+            {
+                ShowFloatingDocument();
+                return;
+            }
+
             // Остальные оверлеи (рация и т.д.)
             var standardNote = NoteManager.GetDynamicNote(index, currentCharacterData);
             overlayTitle.Text = standardNote.Title;
@@ -848,6 +797,7 @@ namespace TheGatekeeper
             currentCharacterData = todayCast[currentCharacterIndex];
             currentCharacter?.Dispose();
             currentCharacter = currentCharacterData.Photo;
+            GenerateDocForCurrentCharacter(); // генерируем документы субъекта
 
             // Закрываем панели предыдущего персонажа
             CloseAllMonitorPanels();
@@ -859,14 +809,14 @@ namespace TheGatekeeper
             AddToDialogueLog(currentCharacterData.Name, currentCharacterData.Dialogue);
 
             if (huntModeActive)
-                lblName.Text = $"{currentCharacterData.Name}  [{huntCorrect}/{huntWaveSize - 1} cleared]";
+                lblName.Text = $"[{huntCorrect}/{huntWaveSize - 1} cleared]";
             else
-                lblName.Text = currentCharacterData.Name;
+                lblName.Text = "SUBJECT APPROACHING";   // имя скрыто — узнай из допроса
 
             StartTypingEffect(currentCharacterData.Dialogue);
 
         }
-            internal void CloseAllStickers()
+        internal void CloseAllStickers()
         {
             foreach (var s in _activeStickers.ToArray())
             {
@@ -874,7 +824,7 @@ namespace TheGatekeeper
             }
             _activeStickers.Clear();
         }
-    
+
 
         // ═══════════════════════════════════════════════════════════════════
         //  TYPING EFFECT
@@ -890,18 +840,22 @@ namespace TheGatekeeper
 
         private void TypingTimer_Tick(object sender, EventArgs e)
         {
-            if (typingIndex < fullDialogueText.Length)
+            // Печатаем по 3 символа за тик — ощутимо быстрее
+            for (int i = 0; i < 3; i++)
             {
-                lblDialogue.Text += fullDialogueText[typingIndex];
-                typingIndex++;
+                if (typingIndex < fullDialogueText.Length)
+                {
+                    lblDialogue.Text += fullDialogueText[typingIndex];
+                    typingIndex++;
+                }
+                else { typingTimer.Stop(); break; }
             }
-            else typingTimer.Stop();
         }
 
         // ═══════════════════════════════════════════════════════════════════
         //  ДИАЛОГ ДОПРОСА
         // ═══════════════════════════════════════════════════════════════════
-        private void OpenCharacterDialogue() => ShowQuestionDialog();
+        private void OpenCharacterDialogue() => ShowInterrogationPanel();
 
         private void ShowQuestionDialog()
         {
@@ -1021,7 +975,7 @@ namespace TheGatekeeper
             {
                 case GameMode.StoryMode:
                     if (day >= 10) ShowStoryEnding();
-                    else ShowDaySummary();
+                    else ShiftEndMessages.Show(this, day, () => ShowDaySummary());
                     break;
 
                 case GameMode.HuntMode:
@@ -1172,6 +1126,15 @@ namespace TheGatekeeper
         // ═══════════════════════════════════════════════════════════════════
         //  РЕНДЕР
         // ═══════════════════════════════════════════════════════════════════
+        // Обновляет позицию и размер диалогового лейбла по ScaleRect
+        private void UpdateDialoguePosition()
+        {
+            if (lblDialogue == null) return;
+            Rectangle zone = ScaleRect(zoneDialogueScreen);
+            lblDialogue.Location = zone.Location;
+            lblDialogue.Size = zone.Size;
+        }
+
         private void Redraw()
         {
             if (_buffer == null) return;
@@ -1196,6 +1159,9 @@ namespace TheGatekeeper
                 g.DrawImage(frontBackground, 0, 0, ClientSize.Width, ClientSize.Height);
 
             DrawInteractiveGlow(g);
+            DrawObserverPassButton(g);
+            DrawTutorialUI(g);
+
 
             if (currentBtnImage != null)
                 g.DrawImage(currentBtnImage, 0, 0, ClientSize.Width, ClientSize.Height);

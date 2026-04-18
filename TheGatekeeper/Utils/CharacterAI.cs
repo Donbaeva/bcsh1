@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using static TheGatekeeper.Models.Character;
 
@@ -10,6 +10,9 @@ namespace TheGatekeeper.Models
 
         public static string GenerateAnswer(Character character, string question)
         {
+            string storyAnswer = StoryDialogueAI.TryGetAnswer(character, question);
+            if (storyAnswer != null) return storyAnswer;
+
             string q = question.ToLower();
 
             if (ContainsAny(q, "code", "access", "permit", "id"))
@@ -30,6 +33,19 @@ namespace TheGatekeeper.Models
             // Специальный вопрос режима ОХОТЫ
             if (ContainsAny(q, "biological", "composition", "organic", "dna"))
                 return GetBiologicalAnswer(character);
+
+            // Новые вопросы от InterrogationSystem
+            if (ContainsAny(q, "name", "who are you", "introduce yourself"))
+                return GetNameAnswer(character);
+
+            if (ContainsAny(q, "occupation", "job", "work", "profession"))
+                return GetOccupationAnswer(character);
+
+            if (ContainsAny(q, "heading", "destination", "going", "where to"))
+                return GetDestinationAnswer(character);
+
+            if (ContainsAny(q, "citizen", "nationality", "citizenship", "registered"))
+                return GetCitizenshipAnswer(character);
 
             return GetDefaultAnswer(character);
         }
@@ -563,6 +579,95 @@ namespace TheGatekeeper.Models
                 "Hey. Same checkpoint as yesterday, right? I'm getting used to this.",
             };
             return human[rnd.Next(human.Length)];
+        }
+
+        // ════════════════════════════════════════════════════════════════
+        //  ИМЯ
+        // ════════════════════════════════════════════════════════════════
+        private static string GetNameAnswer(Character character)
+        {
+            var rnd = new Random();
+            if (character is Robot && character.Day <= 2)
+            {
+                return $"My designation is {character.Name}. It is on file.";
+            }
+            if (character is Alien && character.Day <= 3)
+            {
+                string[] a = {
+                    $"I am called {character.Name}. The document confirms this.",
+                    $"We — I am {character.Name}. It is registered.",
+                };
+                return a[rnd.Next(a.Length)];
+            }
+            string[] h = {
+                $"{character.Name}. Same as on the badge.",
+                $"It's {character.Name}. Is something wrong?",
+                $"My name is {character.Name}. It's on the document.",
+                $"{character.Name}. You can verify that."
+            };
+            return h[rnd.Next(h.Length)];
+        }
+
+        // ════════════════════════════════════════════════════════════════
+        //  ПРОФЕССИЯ
+        // ════════════════════════════════════════════════════════════════
+        private static string GetOccupationAnswer(Character character)
+        {
+            var rnd = new Random();
+            string occ = character.Occupation ?? "general work";
+            if (character is Robot && character.Day <= 2)
+                return $"I am assigned to {occ}. It is in my operational parameters.";
+            string[] opts = {
+                $"I work as {occ}. Have been for a while.",
+                $"{occ}. It's all on the permit.",
+                $"My job? {occ}. Nothing unusual.",
+                $"I'm a {occ}. Why do you ask?"
+            };
+            return opts[rnd.Next(opts.Length)];
+        }
+
+        // ════════════════════════════════════════════════════════════════
+        //  КУДА НАПРАВЛЯЕТСЯ
+        // ════════════════════════════════════════════════════════════════
+        private static string GetDestinationAnswer(Character character)
+        {
+            var rnd = new Random();
+            string reason = character.ReasonToEnter ?? "my workstation";
+            if (character is Robot && character.Day <= 2)
+                return $"Destination: {reason}. Route is programmed and authorised.";
+            string[] opts = {
+                $"I'm heading to {reason}.",
+                $"My destination is {reason}. It's on the pass.",
+                $"Going to {reason} — I'm already late.",
+                $"{reason}. Same as every day."
+            };
+            return opts[rnd.Next(opts.Length)];
+        }
+
+        // ════════════════════════════════════════════════════════════════
+        //  ГРАЖДАНСТВО
+        // ════════════════════════════════════════════════════════════════
+        private static string GetCitizenshipAnswer(Character character)
+        {
+            var rnd = new Random();
+            if (character is Alien && character.Day <= 4)
+            {
+                string[] a = {
+                    "I am a registered visitor. All documentation is valid.",
+                    "Non-human classification, registered. The permit is current.",
+                    "Visitor status, properly registered. You can check the system.",
+                };
+                return a[rnd.Next(a.Length)];
+            }
+            if (character is Robot)
+                return "Synthetic unit, registered and licensed. Serial on file.";
+            string[] h = {
+                "Colony citizen. Born here.",
+                "Citizen, Sector B. Been here my whole life.",
+                "I'm a registered resident. Everything is in order.",
+                "Colony citizen. It's on the document."
+            };
+            return h[rnd.Next(h.Length)];
         }
 
         private static bool ContainsAny(string text, params string[] keywords)

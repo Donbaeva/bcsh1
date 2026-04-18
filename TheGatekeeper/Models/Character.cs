@@ -1,25 +1,27 @@
 ﻿using System;
 using System.Drawing;
 using System.IO;
+using System.Windows.Forms;
 
 namespace TheGatekeeper.Models
 {
-    // Исправленная версия модели Character:
-    // Свойство Photo изменено с string на Image, чтобы корректно хранить загруженное изображение.
-    // Если в проекте где-то присваивается Image напрямую, это теперь будет компилироваться.
     public abstract class Character
     {
         public string Name { get; set; }
-        public string Profession { get; set; }  // профессия
-        public string AccessCode { get; set; }  // код доступа
+        public string Profession { get; set; }
+        public string AccessCode { get; set; }
         public string AccessZone { get; set; }
-        public Image Photo { get; set; }                // <-- изменено: теперь Image, а не string
+        public Image Photo { get; set; }
         public string Dialogue { get; set; }
         public string Species { get; set; }
         public bool IsObvious { get; set; }
         public string Occupation { get; set; }
         public string ReasonToEnter { get; set; }
         public int Day { get; set; }
+
+        // ─── Новое свойство: персонаж-наблюдатель, не требует классификации ──
+        // Если true — кнопки ROBOT/ALIEN/HUMAN скрываются, показывается кнопка [ПРОПУСТИТЬ]
+        public virtual bool IsObserver => false;
 
         public Character(string name, string dialogue, string species, bool isObvious,
                          string occupation, string reason, int day)
@@ -32,20 +34,60 @@ namespace TheGatekeeper.Models
             ReasonToEnter = reason;
             Day = day;
         }
+
+        /// <summary>
+        /// Загружает фото. Путь может быть абсолютным или относительным к Application.StartupPath.
+        /// </summary>
         public void SetPhotoFromFile(string path)
         {
-            Console.WriteLine($"Попытка загрузки фото: {path}"); // Добавьте это
+            // Сначала пробуем как есть (абсолютный путь)
+            if (!File.Exists(path))
+            {
+                // Затем относительно стартовой директории
+                path = Path.Combine(Application.StartupPath, path);
+            }
+
             if (File.Exists(path))
             {
-                Photo = Image.FromFile(path);
-                Console.WriteLine("Успешно загружено!");
+                try
+                {
+                    Photo = Image.FromFile(path);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Ошибка загрузки фото: {ex.Message}");
+                    Photo = CreatePhotoPlaceholder(Name);
+                }
             }
             else
             {
-                Console.WriteLine("ФАЙЛ НЕ НАЙДЕН!");
+                Console.WriteLine($"Фото не найдено: {path}");
+                Photo = CreatePhotoPlaceholder(Name);
             }
         }
 
+        private static Image CreatePhotoPlaceholder(string name)
+        {
+            var bmp = new Bitmap(300, 300);
+            using (var g = Graphics.FromImage(bmp))
+            {
+                g.Clear(Color.FromArgb(25, 30, 35));
+                using (var font = new Font("Consolas", 13, FontStyle.Bold))
+                using (var brush = new SolidBrush(Color.FromArgb(80, 100, 130)))
+                {
+                    var sf = new StringFormat
+                    {
+                        Alignment = StringAlignment.Center,
+                        LineAlignment = StringAlignment.Center
+                    };
+                    g.DrawString($"[{name}]", font, brush,
+                        new RectangleF(0, 0, 300, 300), sf);
+                }
+            }
+            return bmp;
+        }
+
+        // ─── Вложенные классы ────────────────────────────────────────────────
 
         public class Human : Character
         {
@@ -58,7 +100,6 @@ namespace TheGatekeeper.Models
             }
         }
 
-        // РОБОТЫ
         public class Robot : Character
         {
             public string SerialNumber { get; set; }
@@ -71,7 +112,6 @@ namespace TheGatekeeper.Models
             }
         }
 
-        // ПРИШЕЛЬЦЫ
         public class Alien : Character
         {
             public string HomePlanet { get; set; }

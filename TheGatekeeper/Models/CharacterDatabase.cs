@@ -33,11 +33,14 @@ namespace TheGatekeeper.Models
         };
 
         // Настоящие инопланетные имена — используются ТОЛЬКО до Дня 4 включительно
+        // Дни 1-4: пришельцы используют редкие/непривычные человеческие имена
+        // Они реальные, но звучат чуть "не так" — намёк на чужеродность
         private static readonly string[] AlienNamesObvious =
         {
-            "Ma'saryk", "Zyx", "Kr'zzak", "Vel'kor", "Nyx'ara",
-            "Qlx'thor", "Az'rael", "Vex'lon", "Kor'thas", "Zyl'vex",
-            "Zzarth", "Vell", "Krxx", "Nyxar", "Qeth",
+            "Sable Vorn",    "Auren Kesh",   "Cael Dross",   "Vael Mirek",
+            "Soren Ulv",     "Itha Crane",   "Dael Wynn",    "Oren Mast",
+            "Theron Vaux",   "Lyren Cole",   "Azara Dune",   "Sevan Lor",
+            "Ember Prax",    "Riven Cross",  "Oryn Fell",
         };
 
         // Человеческие прикрытия — используются с Дня 5 пришельцами

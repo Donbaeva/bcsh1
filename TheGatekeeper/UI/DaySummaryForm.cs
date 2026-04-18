@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Drawing;
 using System.Windows.Forms;
 using System.Collections.Generic;
@@ -33,7 +33,6 @@ namespace TheGatekeeper
                 }
             };
 
-            // Основная панель с рамкой в стиле игры
             Panel mainPanel = new Panel
             {
                 Dock = DockStyle.Fill,
@@ -47,7 +46,6 @@ namespace TheGatekeeper
             };
             this.Controls.Add(mainPanel);
 
-            // Заголовок
             Label title = new Label
             {
                 Text = $"═══ DAY {day} COMPLETE ═══",
@@ -58,7 +56,6 @@ namespace TheGatekeeper
             };
             mainPanel.Controls.Add(title);
 
-            // Статистика
             Label stats = new Label
             {
                 Text = $"SCORE: {score} pts\n" +
@@ -71,7 +68,6 @@ namespace TheGatekeeper
             };
             mainPanel.Controls.Add(stats);
 
-            // Разделитель
             Label divider = new Label
             {
                 Text = new string('─', 60),
@@ -82,7 +78,6 @@ namespace TheGatekeeper
             };
             mainPanel.Controls.Add(divider);
 
-            // Список решений
             Label decisionsLabel = new Label
             {
                 Text = "YOUR DECISIONS:",
@@ -100,20 +95,45 @@ namespace TheGatekeeper
                 var decision = tuple.Item2;
 
                 Color decisionColor;
+                string decisionLabel;
+
                 switch (decision)
                 {
-                    case "ROBOT": decisionColor = Color.Red; break;
-                    case "ALIEN": decisionColor = Color.DodgerBlue; break;
-                    case "HUMAN": decisionColor = Color.Lime; break;
-                    default: decisionColor = Color.Gray; break;
+                    case "ROBOT":
+                        decisionColor = Color.Red;
+                        decisionLabel = "ROBOT";
+                        break;
+                    case "ALIEN":
+                        decisionColor = Color.DodgerBlue;
+                        decisionLabel = "ALIEN";
+                        break;
+                    case "HUMAN":
+                        decisionColor = Color.Lime;
+                        decisionLabel = "HUMAN";
+                        break;
+                    case "PASS":
+                        // Наблюдатель — пропущен без классификации
+                        decisionColor = Color.LightSkyBlue;
+                        decisionLabel = "PASS ";
+                        break;
+                    default:
+                        decisionColor = Color.Gray;
+                        decisionLabel = "?????";
+                        break;
                 }
-   
 
-            string actualType = character.Species;
+                string actualType = decision == "PASS"
+                    ? "observer"
+                    : character.Species;
+
+                // Для наблюдателей не показываем "actual" — это не ошибка
+                string entryText = decision == "PASS"
+                    ? $"{character.Name,-20}  →  {decisionLabel,-6}  (observer — no check needed)"
+                    : $"{character.Name,-20}  →  {decisionLabel,-6}  (actual: {actualType})";
 
                 Label entry = new Label
                 {
-                    Text = $"{character.Name,-20}  →  {decision,-6}  (actual: {actualType})",
+                    Text = entryText,
                     Font = new Font("Consolas", 10),
                     ForeColor = decisionColor,
                     Location = new Point(40, yPos),
@@ -123,7 +143,6 @@ namespace TheGatekeeper
                 yPos += 25;
             }
 
-            // Подсказка
             Label hint = new Label
             {
                 Text = "\nPress SPACE or ENTER to continue\nPress ESC to exit to menu",

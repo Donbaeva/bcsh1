@@ -521,12 +521,19 @@ namespace TheGatekeeper.Models
                 "Hi. Just... heading to work. Here are my papers.",
                 "Good morning. I have all necessary paperwork.",
                 "Hello. I am ready for inspection.",
-                "Hello. Just heading to work.",
                 "Morning. Is the line usually this long?",
-                "Hello. Hope I didn't forget anything today.",
                 "Good morning. I'm running a bit late, if that's okay.",
                 "Please, officer. I have a schedule to maintain. Can we proceed?",
-                "I really need to get through. Everything is correct. Please.",
+                // Подозрительно слишком человечные
+                "Lovely morning, isn't it? I always enjoy this part of the commute.",
+                "My wife made me breakfast today. First time in weeks. Good day already.",
+                "I was just thinking about my childhood. Anyway. Papers, right?",
+                "You look tired. Long shift? I know how that feels. Believe me.",
+                "I try to smile at everyone I meet. It makes the day better, you know?",
+                // Или наоборот — слишком механические
+                "Identity confirmed. Proceeding to designated work area.",
+                "I have completed all required pre-entry documentation protocols.",
+                "Passage requested. No anomalies to report from my end.",
             };
             return robotMid[rnd.Next(robotMid.Length)];
         }
@@ -590,6 +597,19 @@ namespace TheGatekeeper.Models
                 "I'm not hiding anything. I promise. Just let me pass.",
                 "My boss will fire me if I'm late again. Please, officer.",
                 "Please. I can't miss this. Just look at the papers and let me go.",
+                // Подозрительные — нервные, уклончивые, торопятся
+                "I already showed my papers yesterday. Do I have to do this every time?",
+                "Can we make this quick? I have somewhere to be.",
+                "Nothing unusual. Just... standard visit.",
+                "I don't really want to talk about why I'm here. Is that required?",
+                "My documents are all... they should be fine. Probably.",
+                "I've been through here dozens of times. You know me.",
+                "Look, I'm not going to answer a lot of questions. Check the papers.",
+                "I'd rather not say what sector I'm going to. Is that allowed?",
+                "Everything is in order. Please don't make this difficult.",
+                "I'm just passing through. Nothing to report.",
+                "The code... yes, I have it. Somewhere. Give me a second.",
+                "My hands are cold. That's all. I'm not nervous.",
             };
             return human[rnd.Next(human.Length)];
         }

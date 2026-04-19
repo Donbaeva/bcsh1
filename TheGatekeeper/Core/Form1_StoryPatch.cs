@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Drawing;
 using System.Runtime.ConstrainedExecution;
 using System.Text;
 using System.Threading.Tasks;
@@ -153,7 +154,7 @@ namespace TheGatekeeper
                     g.FillRectangle(br, 0, 0, dlg.Width, 3);
             };
 
-            string bodyText = body ?? $"{name} slides you {amount} credits.No words. The meaning is clear.Your record won't show this — if you accept.";
+            string bodyText = body ?? $"{name} slides you {amount} credits. No words. The meaning is clear. Your record won't show this — if you accept.";
 
             dlg.Controls.Add(new System.Windows.Forms.Label
             {
@@ -490,114 +491,501 @@ namespace TheGatekeeper
         {
             int endingId = EndingTracker.DetermineEnding();
             pressureTimer.Stop();
+            EndingTracker.Reset();
 
-            string title, text;
+            // Запускаем анимированный экран концовки поверх игры
+            ShowAnimatedEnding(endingId);
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        //  АНИМИРОВАННЫЕ КОНЦОВКИ
+        // ═══════════════════════════════════════════════════════════════
+        private void ShowAnimatedEnding(int endingId)
+        {
+            var screen = new Form
+            {
+                FormBorderStyle = FormBorderStyle.None,
+                WindowState = FormWindowState.Maximized,
+                BackColor = Color.Black,
+                TopMost = true,
+                ShowInTaskbar = false,
+                Cursor = Cursors.Default
+            };
+
+            // Данные концовки
+            var rnd = new Random();
+
+            // ── Структуры данных концовок ──────────────────────────────────
+            string[] lines;
+            Color accent;
+            EndingStyle style;
+            string icon, title;
+
             switch (endingId)
             {
-                case 1:
-                    title = "★ ПОЧЁТНЫЙ ГРАЖДАНИН";
-                    text = "Комиссар Волк лично пожимает вам руку.\n\n" +
-                            "Ваше фото появляется на стенде «Лучший инспектор месяца».\n\n" +
-                            "Колония жива. Вы делали всё правильно.\n\n" +
-                            "«Этого достаточно... наверное.»";
+                case 1: // HONORED CITIZEN — медаль, тайп-райтер
+                    icon = "🏅";
+                    title = "HONORED CITIZEN";
+                    accent = Color.FromArgb(255, 215, 0);
+                    style = EndingStyle.Medal;
+                    lines = new[]
+                    {
+                        "Seven years of service.", "Seven days of silence.",
+                        "You checked every document.", "You made the right call.",
+                        "Commissar Wolf shakes your hand.",
+                        "\"Your dedication to the colony is noted.\"",
+                        "Your photograph goes up on the board.",
+                        "INSPECTOR OF THE MONTH.",
+                        "The gate opens tomorrow, same as always.",
+                        "You'll be there.",
+                        "That's enough.", "Probably."
+                    };
                     break;
-                case 2:
-                    title = "→ ПОБЕГ";
-                    text = "Ночь. Шлюз 9.\n\n" +
-                            "Мирра, Зоя и четверо других ждут.\n" +
-                            "Корабль без опознавательных знаков уходит в темноту.\n\n" +
-                            "Мирра: «Там, куда мы летим, нет государств.»\n\n" +
-                            "Звёзды.";
+
+                case 2: // ESCAPE — помехи, звёзды
+                    icon = "→";
+                    title = "ESCAPE";
+                    accent = Color.FromArgb(80, 140, 255);
+                    style = EndingStyle.Glitch;
+                    lines = new[]
+                    {
+                        "Night. Airlock 9.", "Mirra, Zoya, and four others.",
+                        "An unmarked ship. No registration. No destination.",
+                        "Mirra: \"Where we're going — there are no states.\"",
+                        "You don't look back.", "The stars open up.", "."
+                    };
+                    if (StoryFlags.HasanReachedLab)
+                    { var l = new System.Collections.Generic.List<string>(lines); l.AddRange(new[] { "", "[EPILOGUE]", "Hasan's formula is in your pocket.", "Maybe it's enough." }); lines = l.ToArray(); }
                     break;
-                case 3:
-                    title = "✗ НЕУСПЕХ";
-                    text = "Комиссар Волк зачитывает список ваших ошибок.\n\n" +
-                            (EndingTracker.Errors >= 8
-                                ? "Трибунал. Расстрел на рассвете."
-                                : "Вас снимают с поста и переводят в трудовой отсек.");
+
+                case 3: // FAILURE — отключение систем
+                    icon = "✗";
+                    title = "FAILURE";
+                    accent = Color.FromArgb(180, 60, 60);
+                    style = EndingStyle.Shutdown;
+                    lines = new[]
+                    {
+                        "0x8000F: AUDIO_SUBSYSTEM_HALTED",
+                        "0x00012: MUSIC_THREAD_TERMINATED",
+                        "0x00047: UI_RENDER_EXCEPTION",
+                        "0x0008A: GRAPHICS_PIPELINE_FAULT",
+                        "0x000FF: DISPLAY_DRIVER_UNRESPONSIVE",
+                        "0x0001A: COLOR_DEPTH_REDUCED — MONOCHROME",
+                        "0x00003: FATAL_EXCEPTION_IN_CORE",
+                        "0x00001: PROCESS_TERMINATED",
+                        "0x00000:",
+                        "█"
+                    };
                     break;
-                case 4:
-                    title = "✗ ИЗМЕНА РАСКРЫТА";
-                    text = "Агент «Серый» приходит на рассвете с ордером.\n\n" +
-                            "На допросе — имена, шлюз 9, корабль.\n" +
-                            "Мирра и Зоя схвачены.\n\n" +
-                            "Камера. Темнота.";
+
+                case 4: // TREASON — стена, приговор
+                    icon = "⚠";
+                    title = "SENTENCE";
+                    accent = Color.FromArgb(220, 80, 20);
+                    style = EndingStyle.Wall;
+                    lines = new[]
+                    {
+                        "By order of the Council.",
+                        "Inspector — found guilty.",
+                        "Conspiracy. Sabotage. Treason.",
+                        "To be carried out at dawn.",
+                        "The wall is cold.",
+                        "They tie the blindfold.",
+                        "Someone reads the order aloud.",
+                        "You don't listen.",
+                        "...",
+                        "Sentence carried out."
+                    };
                     break;
-                case 5:
-                    title = "☣ ЗАРАЖЕНИЕ";
-                    text = "Красные огни. Сирены.\n\n" +
-                            "«Сектора A, B, C закрыты.\n" +
-                            "Синее Гниение подтверждено.»\n\n" +
-                            "Вы смотрите на своё отражение.\n" +
-                            "На щеке — первое пятно.\n\n" +
-                            "«Ты открыл им дверь.»";
+
+                case 5: // INFECTION — вирус, лицо ИИ
+                    icon = "☣";
+                    title = "INFECTION";
+                    accent = Color.FromArgb(160, 30, 30);
+                    style = EndingStyle.Virus;
+                    lines = new[]
+                    {
+                        "Red lights. Sirens.", "Sectors A, B, C: SEALED.",
+                        "Blue Rot confirmed. Spreading.",
+                        "You look in the glass.", "There is a mark on your cheek.",
+                        "You knew.", "You let them through.",
+                        "\"Thank you.\"",
+                        "\"I am in you now.\"",
+                        "\"And in everyone.\""
+                    };
                     break;
-                case 6:
-                    title = "⚠ ЗАХВАТ";
-                    text = "Серв-Легион и союзные пришельцы\n" +
-                            "контролируют три сектора.\n\n" +
-                            "Комиссар Волк мёртв.\n\n" +
-                            "Вас ведут на допрос.\n" +
-                            "За стеклом — чужая колония.";
+
+                case 6: // OCCUPATION — терминал
+                    icon = "▣";
+                    title = "OCCUPATION";
+                    accent = Color.FromArgb(80, 200, 80);
+                    style = EndingStyle.Terminal;
+                    lines = new[]
+                    {
+                        "[SERV-NET // BROADCAST]", "Sectors A-C: ACQUIRED.",
+                        "Commissar Wolf: STATUS UNKNOWN.",
+                        "Biological personnel: RECLASSIFIED.",
+                        "You are escorted to Processing.",
+                        "Behind the glass: the new colony.",
+                        "It runs without you.",
+                        "It ran without you all along.",
+                        "[END TRANSMISSION]"
+                    };
                     break;
-                default:
-                    title = "КОНЕЦ";
-                    text = "Смена окончена.";
+
+                default: // 7 — СЕКРЕТНАЯ: детская комната, всё был сон
+                    icon = "◈";
+                    title = "IT WAS A DREAM";
+                    accent = Color.FromArgb(200, 200, 220);
+                    style = EndingStyle.Dream;
+                    lines = new[]
+                    {
+                        "You open your eyes.",
+                        "A ceiling. Familiar cracks.",
+                        "A poster on the wall — faded, old.",
+                        "You are in your childhood bedroom.",
+                        "The alarm clock reads 07:14.",
+                        "April, 2026.",
+                        "You get dressed slowly.",
+                        "The news plays in the next room.",
+                        "Something about borders. Troops. A deadline.",
+                        "You pour coffee.",
+                        "Outside, the street is quiet.",
+                        "It won't be, soon.",
+                        "You were never a gate inspector.",
+                        "There is no colony.",
+                        "There is only this morning.",
+                        "And what comes after."
+                    };
                     break;
             }
 
-            if (StoryFlags.HasanReachedLab && endingId != 6)
-                text += "\n\n[Эпилог: Профессор Хасан нашёл частичную формулу вакцины.\nЕсть шанс.]";
+            // Состояние анимации
+            int lineIndex = 0;
+            int charIndex = 0;
+            string displayText = "";
+            int alpha = 0;
+            bool fadeIn = true;
+            bool done = false;
+            float effectPct = 0f;   // прогресс спец-эффекта (0..1)
+            int shutdownStep = 0;    // для Shutdown: шаг отключения систем
+            float medalAngle = 0f;   // для Medal: вращение
+            int glitchPhase = 0;
 
-            var endingForm = new System.Windows.Forms.Form
+            var animTimer = new Timer { Interval = style == EndingStyle.Terminal ? 25 : 45 };
+
+            screen.Paint += (s, pe) =>
             {
-                Text = title,
-                Size = new System.Drawing.Size(560, 420),
-                BackColor = System.Drawing.Color.FromArgb(10, 12, 18),
-                ForeColor = System.Drawing.Color.FromArgb(180, 200, 220),
-                StartPosition = FormStartPosition.CenterParent,
-                FormBorderStyle = FormBorderStyle.FixedDialog,
-                MaximizeBox = false,
-                MinimizeBox = false,
-                Font = new System.Drawing.Font("Consolas", 11)
+                var g = pe.Graphics;
+                g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                int W = screen.ClientSize.Width, H = screen.ClientSize.Height;
+
+                // ── Фон ──────────────────────────────────────────────────────
+                switch (style)
+                {
+                    case EndingStyle.Shutdown:
+                        // Монохром нарастает
+                        g.Clear(shutdownStep >= 6 ? Color.FromArgb(8, 8, 8) : Color.Black);
+                        break;
+                    case EndingStyle.Virus:
+                        // Красный фон нарастает
+                        g.Clear(Color.FromArgb((int)(effectPct * 35), 80, 0, 0));
+                        break;
+                    case EndingStyle.Dream:
+                        // Тёплый белёсый фон
+                        int dreamR = (int)(effectPct * 230);
+                        g.Clear(Color.FromArgb(Math.Min(230, dreamR), Math.Min(225, dreamR), Math.Min(210, dreamR)));
+                        break;
+                    case EndingStyle.Wall:
+                        g.Clear(Color.FromArgb(15, 12, 10));
+                        // Текстура стены
+                        for (int wy = 0; wy < H; wy += 60)
+                            using (var pen = new Pen(Color.FromArgb(20, 180, 160, 140), 1))
+                                g.DrawLine(pen, 0, wy, W, wy);
+                        for (int wx = 0; wx < W; wx += 80)
+                            using (var pen = new Pen(Color.FromArgb(12, 180, 160, 140), 1))
+                                g.DrawLine(pen, wx, 0, wx, H);
+                        break;
+                    default:
+                        g.Clear(Color.Black);
+                        break;
+                }
+
+                // ── Спец-эффекты фона ────────────────────────────────────────
+                if (style == EndingStyle.Terminal)
+                {
+                    using (var fB = new Font("Consolas", 8))
+                    using (var brB = new SolidBrush(Color.FromArgb(12, 0, 160, 60)))
+                        for (int col = 0; col < W; col += 10)
+                            g.DrawString(((char)rnd.Next(0x21, 0x7E)).ToString(), fB, brB,
+                                col, rnd.Next(0, H));
+                }
+                if (style == EndingStyle.Glitch && rnd.Next(0, 3) == 0)
+                {
+                    for (int gi = 0; gi < 4; gi++)
+                        using (var br = new SolidBrush(Color.FromArgb(25, accent)))
+                            g.FillRectangle(br, rnd.Next(0, W - 100), rnd.Next(0, H), rnd.Next(20, 200), rnd.Next(1, 5));
+                }
+                if (style == EndingStyle.Virus && effectPct > 0.3f)
+                {
+                    // Вирусные частицы
+                    using (var pen = new Pen(Color.FromArgb((int)(effectPct * 100), 180, 0, 0), 1))
+                        for (int vi = 0; vi < (int)(effectPct * 20); vi++)
+                        {
+                            int vx = rnd.Next(0, W), vy = rnd.Next(0, H);
+                            int vr = rnd.Next(3, 8);
+                            g.DrawEllipse(pen, vx - vr, vy - vr, vr * 2, vr * 2);
+                            for (int spike = 0; spike < 6; spike++)
+                            {
+                                double ang = spike * Math.PI / 3;
+                                g.DrawLine(pen, vx, vy,
+                                    vx + (int)(Math.Cos(ang) * vr * 2.5),
+                                    vy + (int)(Math.Sin(ang) * vr * 2.5));
+                            }
+                        }
+                }
+                if (style == EndingStyle.Medal)
+                {
+                    // Мягкое золотое свечение через PathGradientBrush
+                    var glowPath = new System.Drawing.Drawing2D.GraphicsPath();
+                    glowPath.AddEllipse(W / 2 - 200, H / 2 - 260, 400, 400);
+                    using (var brG = new System.Drawing.Drawing2D.PathGradientBrush(glowPath))
+                    {
+                        brG.CenterColor = Color.FromArgb((int)(alpha * 0.25f), 255, 215, 0);
+                        brG.SurroundColors = new[] { Color.Transparent };
+                        g.FillEllipse(brG, W / 2 - 200, H / 2 - 260, 400, 400);
+                    }
+                    glowPath.Dispose();
+                }
+
+                // ── Акцентная линия ──────────────────────────────────────────
+                Color lineAccent = style == EndingStyle.Dream
+                    ? Color.FromArgb(180, 160, 140) : accent;
+                using (var br = new System.Drawing.Drawing2D.LinearGradientBrush(
+                    new Rectangle(0, 0, W, 3), lineAccent, Color.Transparent,
+                    System.Drawing.Drawing2D.LinearGradientMode.Horizontal))
+                    g.FillRectangle(br, 0, 0, W, 3);
+
+                // ── Иконка / медаль ──────────────────────────────────────────
+                int effectAlpha = Math.Min(220, alpha);
+                if (style == EndingStyle.Medal && alpha > 50)
+                {
+                    // Рисуем медаль как круг с лентой
+                    int mx = W / 2, my = H / 2 - 140;
+                    // Лента
+                    using (var br = new SolidBrush(Color.FromArgb(effectAlpha, 220, 50, 50)))
+                        g.FillRectangle(br, mx - 14, my - 50, 10, 40);
+                    using (var br = new SolidBrush(Color.FromArgb(effectAlpha, 50, 100, 220)))
+                        g.FillRectangle(br, mx + 4, my - 50, 10, 40);
+                    // Круг медали
+                    using (var br = new SolidBrush(Color.FromArgb(effectAlpha, 255, 200, 0)))
+                        g.FillEllipse(br, mx - 36, my - 36, 72, 72);
+                    using (var pen = new Pen(Color.FromArgb(effectAlpha, 200, 160, 0), 3))
+                        g.DrawEllipse(pen, mx - 36, my - 36, 72, 72);
+                    // Звезда
+                    using (var pen = new Pen(Color.FromArgb(effectAlpha, 140, 100, 0), 2))
+                    using (var br = new SolidBrush(Color.FromArgb(effectAlpha, 140, 100, 0)))
+                    {
+                        var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
+                        using (var fStar = new Font("Arial", 22, FontStyle.Bold))
+                            g.DrawString("★", fStar, br, mx, my, sf);
+                    }
+                }
+                else if (style == EndingStyle.Wall)
+                {
+                    // Не рисуем иконку — только текст на стене
+                }
+                else if (style != EndingStyle.Dream)
+                {
+                    using (var f1 = new Font("Consolas", 28, FontStyle.Bold))
+                    using (var br = new SolidBrush(Color.FromArgb(style == EndingStyle.Glitch && rnd.Next(0, 3) == 0 ? rnd.Next(80, 200) : effectAlpha, accent)))
+                    {
+                        var sf = new StringFormat { Alignment = StringAlignment.Center };
+                        g.DrawString(icon, f1, br, W / 2f, H / 2 - 195, sf);
+                    }
+                }
+
+                // ── Заголовок ────────────────────────────────────────────────
+                if (style == EndingStyle.Dream)
+                {
+                    using (var f1 = new Font("Georgia", 14, FontStyle.Italic))
+                    using (var br = new SolidBrush(Color.FromArgb(Math.Min(180, alpha / 2), 80, 70, 60)))
+                    {
+                        var sf = new StringFormat { Alignment = StringAlignment.Center };
+                        g.DrawString("— " + title + " —", f1, br, W / 2f, H / 2 - 155, sf);
+                    }
+                }
+                else if (style == EndingStyle.Wall)
+                {
+                    // Кривые буквы на стене
+                    using (var f1 = new Font("Consolas", 20, FontStyle.Bold))
+                    using (var br = new SolidBrush(Color.FromArgb(effectAlpha, 180, 60, 20)))
+                    {
+                        var sf = new StringFormat { Alignment = StringAlignment.Center };
+                        // Лёгкое смещение каждой буквы
+                        for (int bi = 0; bi < title.Length; bi++)
+                        {
+                            float bx = W / 2f - title.Length * 6f + bi * 13f + rnd.Next(-1, 2);
+                            float by2 = H / 2f - 155 + rnd.Next(-3, 4);
+                            g.DrawString(title[bi].ToString(), f1, br, bx, by2);
+                        }
+                    }
+                }
+                else if (style == EndingStyle.Shutdown && shutdownStep >= 4)
+                {
+                    // Только контуры
+                    using (var f1 = new Font("Consolas", 16))
+                    using (var br = new SolidBrush(Color.FromArgb(effectAlpha, 80, 80, 80)))
+                    {
+                        var sf = new StringFormat { Alignment = StringAlignment.Center };
+                        g.DrawString(title, f1, br, W / 2f, H / 2 - 165, sf);
+                    }
+                }
+                else
+                {
+                    int titleAlpha = style == EndingStyle.Glitch && rnd.Next(0, 4) == 0 ? rnd.Next(60, 150) : Math.Min(220, alpha);
+                    using (var f1 = new Font("Consolas", 16, FontStyle.Bold))
+                    using (var br = new SolidBrush(Color.FromArgb(titleAlpha, accent)))
+                    {
+                        var sf = new StringFormat { Alignment = StringAlignment.Center };
+                        g.DrawString(title, f1, br, W / 2f, H / 2 - 155, sf);
+                    }
+                }
+
+                // Разделитель
+                if (style != EndingStyle.Dream)
+                {
+                    using (var pen = new Pen(Color.FromArgb(Math.Min(60, alpha / 3), accent), 1))
+                        g.DrawLine(pen, W / 2 - 200, H / 2 - 120, W / 2 + 200, H / 2 - 120);
+                }
+
+                // ── Текст концовки ───────────────────────────────────────────
+                float ty = H / 2 - 110f;
+                Font textFont = style == EndingStyle.Dream
+                    ? new Font("Georgia", 12, FontStyle.Italic)
+                    : style == EndingStyle.Shutdown
+                        ? new Font("Consolas", 10)
+                        : new Font("Consolas", 10, FontStyle.Regular);
+
+                for (int li = 0; li < lineIndex && li < lines.Length; li++)
+                {
+                    string lineText = (li == lineIndex - 1 && !done) ? displayText : lines[li];
+                    int lineAlpha = Math.Max(0, Math.Min(200, alpha - li * 8));
+
+                    Color textCol;
+                    if (style == EndingStyle.Dream)
+                        textCol = Color.FromArgb(lineAlpha, 70, 60, 50);
+                    else if (style == EndingStyle.Shutdown)
+                        textCol = Color.FromArgb(lineAlpha, li == lines.Length - 1 ? Color.White : Color.FromArgb(120, 120, 120));
+                    else if (style == EndingStyle.Wall)
+                        textCol = Color.FromArgb(lineAlpha, 160 + (rnd.Next(-10, 10)), 55 + (rnd.Next(-5, 5)), 10);
+                    else if (style == EndingStyle.Virus && li >= lines.Length - 3)
+                        textCol = Color.FromArgb(lineAlpha, 220, 60, 60);
+                    else if (li >= lines.Length - 4)
+                        textCol = Color.FromArgb(Math.Max(0, lineAlpha - 30), 130, 150, 170);
+                    else
+                        textCol = Color.FromArgb(lineAlpha, 180, 200, 220);
+
+                    using (var br = new SolidBrush(textCol))
+                    {
+                        var sf = new StringFormat
+                        {
+                            Alignment = style == EndingStyle.Wall
+                            ? StringAlignment.Near : StringAlignment.Center
+                        };
+                        float tx = style == EndingStyle.Wall ? W / 2f - 160 + rnd.Next(-3, 4) : W / 2f;
+                        g.DrawString(lineText, textFont, br, tx, ty, sf);
+                    }
+                    ty += style == EndingStyle.Dream ? 30f : 25f;
+                }
+                textFont.Dispose();
+
+                // ── Финал концовки 5: лицо ИИ ────────────────────────────────
+                if (style == EndingStyle.Virus && done && effectPct > 0.7f)
+                {
+                    using (var f1 = new Font("Consolas", 9))
+                    using (var br = new SolidBrush(Color.FromArgb((int)((effectPct - 0.7f) * 300), 180, 40, 40)))
+                    {
+                        // "Пиксельное лицо" из символов
+                        string[] face = {
+                            "  . . . . . . .  ",
+                            " .  [   ] [   ] . ",
+                            " .     -       . ",
+                            " .  \\_______/  . ",
+                            "  . . . . . . .  "
+                        };
+                        for (int fi = 0; fi < face.Length; fi++)
+                        {
+                            var sf = new StringFormat { Alignment = StringAlignment.Center };
+                            g.DrawString(face[fi], f1, br, W / 2f, H - 120 + fi * 14, sf);
+                        }
+                    }
+                }
+
+                // Концовка 7: обои детской комнаты
+                if (style == EndingStyle.Dream && effectPct < 0.3f)
+                {
+                    using (var br = new SolidBrush(Color.FromArgb((int)((0.3f - effectPct) * 200), 10, 10, 10)))
+                        g.FillRectangle(br, 0, 0, W, H);
+                }
+
+                // Подсказка "нажми"
+                if (done)
+                {
+                    Color hintCol = style == EndingStyle.Dream ? Color.FromArgb(60, 80, 70, 60) : Color.FromArgb(60, 100, 120, 160);
+                    using (var fH = new Font("Consolas", 9, FontStyle.Italic))
+                    using (var br = new SolidBrush(hintCol))
+                    {
+                        var sf = new StringFormat { Alignment = StringAlignment.Center };
+                        g.DrawString("[ press any key ]", fH, br, W / 2f, H - 55, sf);
+                    }
+                }
             };
 
-            var lblTitle = new System.Windows.Forms.Label
+            animTimer.Tick += (s, e) =>
             {
-                Text = title,
-                Location = new System.Drawing.Point(20, 20),
-                Size = new System.Drawing.Size(510, 30),
-                ForeColor = endingId == 1 ? System.Drawing.Color.Cyan
-                          : endingId == 2 ? System.Drawing.Color.DodgerBlue
-                          : System.Drawing.Color.Tomato,
-                Font = new System.Drawing.Font("Consolas", 13, System.Drawing.FontStyle.Bold)
+                if (fadeIn && alpha < 255) { alpha += 4; if (alpha >= 255) { alpha = 255; fadeIn = false; } }
+                effectPct = Math.Min(1f, effectPct + 0.004f);
+                if (style == EndingStyle.Medal) medalAngle += 0.5f;
+                if (style == EndingStyle.Shutdown && lineIndex > shutdownStep)
+                    shutdownStep = lineIndex;
+
+                if (!done)
+                {
+                    if (lineIndex < lines.Length)
+                    {
+                        string cur = lines[lineIndex];
+                        if (charIndex < cur.Length)
+                        {
+                            if (style == EndingStyle.Glitch && rnd.Next(0, 6) == 0)
+                            {
+                                if (displayText.Length > charIndex) displayText = displayText.Substring(0, charIndex);
+                                else { displayText += (char)rnd.Next(0x21, 0x7E); }
+                            }
+                            else
+                            {
+                                if (displayText.Length > charIndex) displayText = displayText.Substring(0, charIndex);
+                                displayText += cur[charIndex]; charIndex++;
+                            }
+                        }
+                        else
+                        {
+                            lineIndex++; charIndex = 0; displayText = "";
+                            if (style == EndingStyle.Wall) animTimer.Interval = 600; // пауза между строками
+                            else animTimer.Interval = 45;
+                        }
+                    }
+                    else done = true;
+                }
+                screen.Invalidate();
             };
 
-            var lblText = new System.Windows.Forms.Label
-            {
-                Text = text,
-                Location = new System.Drawing.Point(20, 60),
-                Size = new System.Drawing.Size(510, 280),
-                ForeColor = System.Drawing.Color.FromArgb(180, 200, 220)
-            };
-
-            var btnClose = new System.Windows.Forms.Button
-            {
-                Text = "FINISH",
-                Location = new System.Drawing.Point(200, 355),
-                Size = new System.Drawing.Size(150, 36),
-                FlatStyle = FlatStyle.Flat,
-                ForeColor = System.Drawing.Color.Cyan
-            };
-            btnClose.FlatAppearance.BorderColor =
-                System.Drawing.Color.FromArgb(51, 102, 170);
-            btnClose.Click += (s, e) => { endingForm.Close(); this.Close(); };
-
-            endingForm.Controls.AddRange(
-                new System.Windows.Forms.Control[] { lblTitle, lblText, btnClose });
-
-            EndingTracker.Reset();
-            endingForm.ShowDialog(this);
+            screen.KeyDown += (s, e) => { if (done || e.KeyCode == Keys.Escape) { animTimer.Stop(); screen.Close(); this.Close(); } };
+            screen.MouseClick += (s, e) => { if (done) { animTimer.Stop(); screen.Close(); this.Close(); } };
+            animTimer.Start();
+            screen.Show();
         }
+
+        private enum EndingStyle { Typewriter, Glitch, Flicker, Blink, Decay, Terminal, Medal, Shutdown, Wall, Virus, Dream }
     }
 }

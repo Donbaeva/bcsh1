@@ -31,10 +31,10 @@ namespace TheGatekeeper
 
         // ─── Зоны клика ─────────────────────────────────────────────────────
         // Центры круглых кнопок в базовом разрешении
-        private readonly Point redCenterBase = new Point(95, 590);
+        private readonly Point redCenterBase = new Point(92, 590);
         private readonly Point blueCenterBase = new Point(200, 590);
         private readonly Point greenCenterBase = new Point(312, 590);
-        private const int buttonRadiusBase = 40;
+        private const int buttonRadiusBase = 38;
         private readonly Rectangle monitorRectBase = new Rectangle(350, 170, 585, 450);
 
         private readonly Rectangle zoneLeftTop = new Rectangle(58, 150, 140, 92);
@@ -48,9 +48,7 @@ namespace TheGatekeeper
         private readonly Rectangle zoneBigRadio = new Rectangle(1070, 555, 210, 125);
         private readonly Rectangle zoneSmallRadio = new Rectangle(950, 490, 63, 130);
         private readonly Rectangle zoneDialogueScreen = new Rectangle(515, 502, 265, 60);
-        private readonly Rectangle zoneClock = new Rectangle(480, 572, 170, 50);
-        // Мини-часы справа от диалог-лога — дублируют ClockMenu
-        private readonly Rectangle zoneClock2 = new Rectangle(830, 498, 90, 95);
+        private readonly Rectangle zoneClock = new Rectangle(840, 498, 75, 50);
 
         private int hoveredZone = -1;
 
@@ -90,7 +88,10 @@ namespace TheGatekeeper
         private Character currentCharacterData;
         private int currentCharacterIndex = 0;
 
-        private int shiftSeconds = 0;
+        private int shiftSeconds = 0;  // реальные секунды смены
+        private const int ShiftStartHour = 9;   // 09:00 — начало смены
+        private const int ShiftEndHour = 17;  // 17:00 — конец смены
+        private const float ShiftSpeedMult = 8f; // игровое время идёт в 8x быстрее
 
         private Timer typingTimer;
         private string fullDialogueText = "";
@@ -148,8 +149,7 @@ namespace TheGatekeeper
             {
                 zoneLeftTop, zoneLeftMiddle, zoneLeftBottom,
                 zoneSticker1, zoneSticker2, zoneSticker3, zoneSticker4,
-                zoneRightScreen, zoneBigRadio, zoneSmallRadio, zoneDialogueScreen,
-                zoneClock2
+                zoneRightScreen, zoneBigRadio, zoneSmallRadio, zoneDialogueScreen
             };
 
             shutterTimer = new Timer { Interval = 15 };
@@ -166,12 +166,19 @@ namespace TheGatekeeper
             pressureTimer.Tick += (s, e) =>
             {
                 if (pressureSeconds < 120) pressureSeconds++;
-                shiftSeconds++; // часы тикают
+                shiftSeconds++;
                 UpdatePressureUI();
                 UpdateMonitorPanelNoise();
                 if (endlessModeActive && pressureSeconds >= 60)
                     ApplyEndlessPressurePenalty();
-                Redraw(); // обновляем часы каждую секунду
+                // Отслеживаем высокое давление для секретной концовки
+                if (storyModeActive)
+                {
+                    EndingTracker.TotalTicks++;
+                    int pct = (int)(pressureSeconds * 100f / 120);
+                    if (pct >= 90) EndingTracker.HighPressureTicks++;
+                }
+                if (!isAnimating) Redraw();
             };
 
             LoadResources();
@@ -184,6 +191,12 @@ namespace TheGatekeeper
             InitModeSession();
 
             this.MouseClick += Form_MouseClick_New;
+            // MouseUp для часов — срабатывает надёжнее чем MouseClick
+            this.MouseUp += (s, e) =>
+            {
+                if (e.Button == MouseButtons.Left && ScaleRect(zoneClock).Contains(e.Location))
+                    ShowClockMenu();
+            };
             this.MouseMove += Form_MouseMove_New;
             this.KeyDown += (s, e) =>
             {
@@ -622,6 +635,7 @@ namespace TheGatekeeper
             btnPause.Click += (s, e) => ShowPauseMenu();
             this.Controls.Add(btnPause);
 
+
             this.Controls.AddRange(new Control[]
                 { lblScore, lblDay, lblQuota, lblPressure, lblName, lblDialogue, lblMode });
         }
@@ -698,6 +712,14 @@ namespace TheGatekeeper
                 Cursor = Cursors.Default
             };
             overlayPanel.Click += (s, e) => HideOverlay();
+            // Пробрасываем MouseUp с overlayPanel на форму (для клика по часам)
+            overlayPanel.MouseUp += (s, e) =>
+            {
+                var screenPt = overlayPanel.PointToScreen(e.Location);
+                var formPt = this.PointToClient(screenPt);
+                if (e.Button == MouseButtons.Left && ScaleRect(zoneClock).Contains(formPt))
+                    ShowClockMenu();
+            };
 
             int cardW = 620, cardH = 420;
             var card = new Panel
@@ -794,13 +816,6 @@ namespace TheGatekeeper
 
 
 
-            // index 11 = zoneClock2 (мини-часы справа от диалога)
-            if (index == 11)
-            {
-                ShowClockMenu();
-                return;
-            }
-
             // Остальные оверлеи (рация и т.д.)
             var standardNote = NoteManager.GetDynamicNote(index, currentCharacterData);
             overlayTitle.Text = standardNote.Title;
@@ -831,6 +846,14 @@ namespace TheGatekeeper
 
 
         private void HideOverlay() => overlayPanel.Visible = false;
+
+        // Вызывается из OverlayManager при MouseUp
+        internal void TryOpenClockFromOverlay(Point screenPoint)
+        {
+            var formPt = this.PointToClient(screenPoint);
+            if (ScaleRect(zoneClock).Contains(formPt))
+                ShowClockMenu();
+        }
 
         // ═══════════════════════════════════════════════════════════════════
         //  ПЕРСОНАЖ
@@ -1101,9 +1124,8 @@ namespace TheGatekeeper
         // ═══════════════════════════════════════════════════════════════════
         private void UpdateStatsUI()
         {
-            // HUD скрыт — просто обновляем внутренние данные
-            // Статы видны в стикере SHIFT STATUS и в меню часов
-            Redraw();
+            // HUD скрыт — данные хранятся в полях, видны в меню часов и стикере
+            // Redraw НЕ вызываем здесь — он вызывается из pressureTimer и ShutterTimer
         }
 
         private void ShowDaySummary()
@@ -1224,12 +1246,12 @@ namespace TheGatekeeper
             }
 
             DrawShutter(g);
-            DrawClock(g);
             DrawMonitorText(g);
 
             if (frontBackground != null)
                 g.DrawImage(frontBackground, 0, 0, ClientSize.Width, ClientSize.Height);
 
+            DrawClock(g);
             DrawInteractiveGlow(g);
             DrawObserverPassButton(g);
             DrawTutorialUI(g);
@@ -1380,81 +1402,8 @@ namespace TheGatekeeper
                 g.DrawString($"{m:D2}:{s:D2}", font, br, zone, sf);
             }
 
-            // Рисуем мини-часы справа от диалога
-            DrawMiniClock(g);
         }
 
-        private void DrawMiniClock(Graphics g)
-        {
-            Rectangle z = ScaleRect(zoneClock2);
-            bool hov = z.Contains(PointToClient(Cursor.Position));
-            int mm = shiftSeconds / 60;
-            int ss = shiftSeconds % 60;
-
-            // Glow как у других зон (cyan)
-            using (GraphicsPath path = RoundedRect(z, 8))
-            {
-                for (int i = 8; i >= 1; i--)
-                    using (Pen p = new Pen(Color.FromArgb((hov ? 22 : 10) * i, 0, 220, 255), i))
-                        g.DrawPath(p, path);
-                using (var br = new SolidBrush(Color.FromArgb(hov ? 22 : 8, 0, 220, 255)))
-                    g.FillPath(br, path);
-            }
-
-            // Метка "SHIFT"
-            using (var font = new Font("Consolas", 7f, FontStyle.Bold))
-            using (var br = new SolidBrush(Color.FromArgb(hov ? 160 : 80, 0, 180, 220)))
-            {
-                var sf = new StringFormat { Alignment = StringAlignment.Center };
-                g.DrawString("SHIFT", font, br, z.X + z.Width / 2f, z.Y + 5, sf);
-            }
-
-            // Время MM:SS
-            using (var font = new Font("Consolas", 12f, FontStyle.Bold))
-            using (var br = new SolidBrush(Color.FromArgb(hov ? 255 : 180, 0, 200, 255)))
-            {
-                var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
-                g.DrawString($"{mm:D2}:{ss:D2}", font, br,
-                    new RectangleF(z.X, z.Y + 18, z.Width, 28), sf);
-            }
-
-            // Мини-прогресс проверенных
-            if (dailyQuota > 0)
-            {
-                int barW = z.Width - 10;
-                int barX = z.X + 5;
-                int barY = z.Y + z.Height - 16;
-                float pct = Math.Min(1f, (float)charactersChecked / dailyQuota);
-
-                // Фон бара
-                using (var br = new SolidBrush(Color.FromArgb(30, 0, 180, 100)))
-                    g.FillRectangle(br, barX, barY, barW, 6);
-                // Заполнение
-                using (var br = new SolidBrush(Color.FromArgb(hov ? 200 : 140, 0, 210, 100)))
-                    g.FillRectangle(br, barX, barY, (int)(barW * pct), 6);
-
-                // Текст checked/total
-                using (var font = new Font("Consolas", 6.5f))
-                using (var br = new SolidBrush(Color.FromArgb(hov ? 140 : 80, 0, 180, 100)))
-                {
-                    var sf = new StringFormat { Alignment = StringAlignment.Center };
-                    g.DrawString($"{charactersChecked}/{dailyQuota}", font, br,
-                        z.X + z.Width / 2f, barY - 10, sf);
-                }
-            }
-
-            // Подсказка при hover
-            if (hov)
-            {
-                using (var font = new Font("Consolas", 6.5f, FontStyle.Italic))
-                using (var br = new SolidBrush(Color.FromArgb(90, 0, 180, 220)))
-                {
-                    var sf = new StringFormat { Alignment = StringAlignment.Center };
-                    g.DrawString("click for stats", font, br,
-                        z.X + z.Width / 2f, z.Y + z.Height + 3, sf);
-                }
-            }
-        }
 
         private void DrawShutter(Graphics g)
         {
@@ -1538,145 +1487,187 @@ namespace TheGatekeeper
         // ═══════════════════════════════════════════════════════════════
         //  МЕНЮ ПАУЗЫ — сохранение, настройки, выход
         // ═══════════════════════════════════════════════════════════════
-        private void ShowClockMenu()
+        internal void ShowClockMenu()
         {
-            pressureTimer.Stop();
-            typingTimer.Stop();
+            // Не открываем дубль
+            foreach (Form f in Application.OpenForms)
+                if (!(f is Form1) && f.Text == "SHIFT STATUS" && !f.IsDisposed)
+                { f.BringToFront(); return; }
 
-            // Высота зависит от кнопок: шапка(140) + 4 кнопки(44*4=176) + отступ(20) = ~336
-            var menu = new Form
+            var win = new Form
             {
-                Size = new Size(310, 360),
-                BackColor = Color.FromArgb(8, 12, 18),
-                StartPosition = FormStartPosition.Manual,
+                Text = "SHIFT STATUS",
+                Size = new Size(300, 320),
                 FormBorderStyle = FormBorderStyle.None,
+                BackColor = Color.FromArgb(10, 14, 20),
                 TopMost = true,
-                ShowInTaskbar = false
+                ShowInTaskbar = false,
+                StartPosition = FormStartPosition.Manual,
             };
 
-            // Позиция — слева от zoneClock2, вверх
-            var c2 = ScaleRect(zoneClock2);
-            menu.Location = new Point(
-                Math.Max(0, c2.Left - 320),
-                Math.Max(0, c2.Top - 80));
+            // Позиция — над часами
+            var clkR = ScaleRect(zoneClock);
+            win.Location = new Point(
+                Math.Max(0, clkR.Left - win.Width + clkR.Width),
+                Math.Max(0, clkR.Top - win.Height - 6));
 
-            menu.Paint += (s, pe) =>
+            // Рамка
+            win.Paint += (s, pe) =>
             {
-                var g2 = pe.Graphics;
-
-                // Рамка
-                using (var pen = new Pen(Color.FromArgb(80, 0, 180, 255), 1))
-                    g2.DrawRectangle(pen, 0, 0, menu.Width - 1, menu.Height - 1);
-                // Верхняя линия
+                var g = pe.Graphics;
+                using (var pen = new Pen(Color.FromArgb(120, 0, 160, 220), 1))
+                    g.DrawRectangle(pen, 0, 0, win.Width - 1, win.Height - 1);
                 using (var br = new System.Drawing.Drawing2D.LinearGradientBrush(
-                    new Rectangle(0, 0, menu.Width, 3),
-                    Color.FromArgb(160, 0, 180, 255), Color.Transparent,
+                    new Rectangle(0, 0, win.Width, 3),
+                    Color.FromArgb(180, 0, 160, 220), Color.Transparent,
                     System.Drawing.Drawing2D.LinearGradientMode.Horizontal))
-                    g2.FillRectangle(br, 0, 0, menu.Width, 3);
-
-                // ── Время смены крупно ──
-                int mm = shiftSeconds / 60, ss2 = shiftSeconds % 60;
-                using (var font = new Font("Consolas", 20, FontStyle.Bold))
-                using (var brT = new SolidBrush(Color.FromArgb(0, 190, 255)))
-                {
-                    var sf = new StringFormat { Alignment = StringAlignment.Center };
-                    g2.DrawString($"{mm:D2}:{ss2:D2}", font, brT, menu.Width / 2f, 10, sf);
-                }
-                using (var font = new Font("Consolas", 7))
-                using (var brS = new SolidBrush(Color.FromArgb(50, 90, 130)))
-                {
-                    var sf = new StringFormat { Alignment = StringAlignment.Center };
-                    g2.DrawString("SHIFT TIME", font, brS, menu.Width / 2f, 38, sf);
-                }
-
-                // ── Разделитель ──
-                using (var pen = new Pen(Color.FromArgb(30, 51, 102, 170), 1))
-                    g2.DrawLine(pen, 12, 52, menu.Width - 12, 52);
-
-                // ── Статы ──
-                void StatRow(string label, string value, float y, Color valColor)
-                {
-                    using (var fL = new Font("Consolas", 8))
-                    using (var brL = new SolidBrush(Color.FromArgb(70, 100, 140)))
-                        g2.DrawString(label, fL, brL, 14, y);
-                    using (var fV = new Font("Consolas", 9, FontStyle.Bold))
-                    using (var brV = new SolidBrush(valColor))
-                    {
-                        var sf = new StringFormat { Alignment = StringAlignment.Far };
-                        g2.DrawString(value, fV, brV, new RectangleF(14, y - 1, menu.Width - 28, 16), sf);
-                    }
-                }
-
-                float ry = 58;
-                StatRow("DAY", $"{day} / 7",
-                    ry, Color.FromArgb(100, 180, 255)); ry += 18;
-                StatRow("CHECKED", $"{charactersChecked} / {dailyQuota}",
-                    ry, Color.FromArgb(0, 210, 100)); ry += 18;
-                StatRow("REMAINING", $"{Math.Max(0, dailyQuota - charactersChecked)}",
-                    ry, Color.FromArgb(220, 180, 60)); ry += 18;
-                StatRow("SCORE", $"{score}",
-                    ry, Color.FromArgb(220, 200, 80)); ry += 18;
-                StatRow("CREDITS", $"{credits} cr",
-                    ry, Color.FromArgb(180, 220, 120)); ry += 18;
-
-                // Давление
-                int pct = Math.Min(100, (int)(pressureSeconds * 100f / 120));
-                string bar = new string('█', pct / 10) + new string('░', 10 - pct / 10);
-                Color pCol = pct < 50 ? Color.FromArgb(0, 200, 150)
-                           : pct < 75 ? Color.FromArgb(220, 180, 0)
-                           : Color.FromArgb(220, 60, 60);
-                StatRow("PRESSURE", $"{pct}%", ry, pCol); ry += 18;
-
-                // Разделитель перед кнопками
-                using (var pen = new Pen(Color.FromArgb(25, 51, 102, 170), 1))
-                    g2.DrawLine(pen, 12, (int)ry + 2, menu.Width - 12, (int)ry + 2);
+                    g.FillRectangle(br, 0, 0, win.Width, 3);
             };
 
-            int by = 178;
+            // Заголовок + перетаскивание
+            bool drag = false; Point dragOff = Point.Empty;
+            var header = new Panel { Dock = DockStyle.Top, Height = 28, BackColor = Color.FromArgb(10, 22, 36) };
+            var hLbl = new Label
+            {
+                Text = "  ⏱  SHIFT STATUS",
+                Dock = DockStyle.Fill,
+                ForeColor = Color.FromArgb(80, 160, 220),
+                Font = new Font("Consolas", 8f, FontStyle.Bold),
+                TextAlign = ContentAlignment.MiddleLeft
+            };
+            var hX = new Button
+            {
+                Text = "×",
+                Dock = DockStyle.Right,
+                Width = 28,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Arial", 12f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(180, 80, 80),
+                BackColor = Color.Transparent,
+                Cursor = Cursors.Hand
+            };
+            hX.FlatAppearance.BorderSize = 0;
+            hX.Click += (s, e) => { win.Close(); pressureTimer.Start(); };
+            header.Controls.Add(hLbl); header.Controls.Add(hX);
+            void Drag(Control ctrl)
+            {
+                ctrl.MouseDown += (s, e) => { if (e.Button == MouseButtons.Left) { drag = true; dragOff = e.Location; } };
+                ctrl.MouseMove += (s, e) => { if (drag) win.Location = new Point(win.Left + e.X - dragOff.X, win.Top + e.Y - dragOff.Y); };
+                ctrl.MouseUp += (s, e) => drag = false;
+            }
+            Drag(header); Drag(hLbl);
+
+            // Тело — статы
+            var body = new Panel { Dock = DockStyle.Fill, Padding = new Padding(14, 10, 14, 10), BackColor = Color.Transparent };
+
+            // Игровое время
+            int gs = (int)(shiftSeconds * ShiftSpeedMult);
+            int gh = ShiftStartHour + gs / 3600;
+            int gm2 = (gs % 3600) / 60;
+            string tStr = $"{Math.Min(gh, ShiftEndHour):D2}:{gm2:D2}";
+
+            int pct = Math.Min(100, (int)(pressureSeconds * 100f / 120));
+            Color pCol = pct < 50 ? Color.FromArgb(0, 200, 150)
+                       : pct < 75 ? Color.FromArgb(220, 180, 0)
+                       : Color.FromArgb(220, 60, 60);
+
+            // Добавляем строки
+            int ry = 10;
+            void Row(string label, string value, Color valCol)
+            {
+                body.Controls.Add(new Label
+                {
+                    Text = label,
+                    Location = new Point(0, ry),
+                    Size = new Size(130, 20),
+                    ForeColor = Color.FromArgb(70, 100, 140),
+                    Font = new Font("Consolas", 8f),
+                    BackColor = Color.Transparent,
+                    AutoSize = false
+                });
+                body.Controls.Add(new Label
+                {
+                    Text = value,
+                    Location = new Point(130, ry),
+                    Size = new Size(140, 20),
+                    ForeColor = valCol,
+                    Font = new Font("Consolas", 9f, FontStyle.Bold),
+                    BackColor = Color.Transparent,
+                    AutoSize = false,
+                    TextAlign = ContentAlignment.MiddleRight
+                });
+                ry += 24;
+            }
+
+            void Divider()
+            {
+                body.Controls.Add(new Label
+                {
+                    Location = new Point(0, ry),
+                    Size = new Size(272, 1),
+                    BackColor = Color.FromArgb(30, 51, 102, 170)
+                });
+                ry += 10;
+            }
+
+            // Время крупно
+            body.Controls.Add(new Label
+            {
+                Text = tStr,
+                Location = new Point(0, ry),
+                Size = new Size(272, 36),
+                ForeColor = Color.FromArgb(0, 190, 255),
+                Font = new Font("Consolas", 22f, FontStyle.Bold),
+                BackColor = Color.Transparent,
+                AutoSize = false,
+                TextAlign = ContentAlignment.MiddleCenter
+            });
+            ry += 42;
+            Divider();
+
+            Row("DAY", $"{day} / 7", Color.FromArgb(100, 180, 255));
+            Row("CHECKED", $"{charactersChecked} / {dailyQuota}", Color.FromArgb(0, 210, 100));
+            Row("REMAINING", $"{Math.Max(0, dailyQuota - charactersChecked)}", Color.FromArgb(220, 180, 60));
+            Divider();
+            Row("WALLET", $"{credits} cr", Color.FromArgb(200, 220, 80));
+            Row("PRESSURE", $"{pct}%", pCol);
+            Divider();
+
+            // Кнопки
             void Btn(string text, Color fg, Color bg, Action act)
             {
                 var btn = new Button
                 {
                     Text = text,
-                    Location = new Point(12, by),
-                    Size = new Size(menu.Width - 24, 36),
+                    Location = new Point(0, ry),
+                    Size = new Size(272, 34),
                     FlatStyle = FlatStyle.Flat,
                     BackColor = bg,
                     ForeColor = fg,
-                    Font = new Font("Consolas", 8, FontStyle.Bold),
+                    Font = new Font("Consolas", 8f, FontStyle.Bold),
                     Cursor = Cursors.Hand,
                     TextAlign = ContentAlignment.MiddleLeft,
                     Padding = new Padding(8, 0, 0, 0)
                 };
-                btn.FlatAppearance.BorderColor = Color.FromArgb(
-                    fg.R / 6, fg.G / 6, fg.B / 6 + 15);
-                btn.Click += (s, e) => { menu.Close(); act(); };
-                menu.Controls.Add(btn);
-                by += 42;
+                btn.FlatAppearance.BorderColor = Color.FromArgb(fg.R / 6, fg.G / 6, fg.B / 6 + 15);
+                btn.Click += (s, e) => { win.Close(); act(); };
+                body.Controls.Add(btn);
+                ry += 38;
             }
 
-            Btn("▶  CONTINUE SHIFT",
-                Color.FromArgb(0, 210, 100), Color.FromArgb(8, 38, 16),
-                () => { pressureTimer.Start(); typingTimer.Start(); });
+            Btn("▶  CONTINUE SHIFT", Color.FromArgb(0, 210, 100), Color.FromArgb(8, 38, 16), () => pressureTimer.Start());
+            Btn("⏹  END SHIFT EARLY", Color.FromArgb(220, 160, 40), Color.FromArgb(28, 22, 8), () => ShowDaySummary());
+            Btn("💾  SAVE", Color.FromArgb(100, 160, 240), Color.FromArgb(8, 18, 38), () => { SaveProgress(); pressureTimer.Start(); });
+            Btn("✕  EXIT", Color.FromArgb(200, 80, 80), Color.FromArgb(28, 8, 8), () => this.Close());
 
-            Btn("⏹  END SHIFT EARLY",
-                Color.FromArgb(220, 160, 40), Color.FromArgb(28, 22, 8),
-                () => { ShowDaySummary(); });
+            // Подгоняем высоту под контент
+            win.Size = new Size(300, 28 + body.Padding.Top + ry + body.Padding.Bottom + 10);
 
-            Btn("💾  SAVE PROGRESS",
-                Color.FromArgb(100, 160, 240), Color.FromArgb(8, 18, 38),
-                () => { SaveProgress(); pressureTimer.Start(); });
-
-            Btn("✕  EXIT TO MENU",
-                Color.FromArgb(200, 80, 80), Color.FromArgb(28, 8, 8),
-                () => { this.Close(); });
-
-            menu.KeyDown += (s, e) =>
-            {
-                if (e.KeyCode == Keys.Escape) { menu.Close(); pressureTimer.Start(); }
-            };
-            menu.LostFocus += (s, e) => { menu.Close(); pressureTimer.Start(); };
-            menu.ShowDialog(this);
+            win.Controls.Add(body);
+            win.Controls.Add(header);
+            win.KeyDown += (s, e) => { if (e.KeyCode == Keys.Escape) { win.Close(); pressureTimer.Start(); } };
+            pressureTimer.Stop();
+            win.Show(this);
         }
 
         private void ShowPauseMenu()

@@ -121,20 +121,12 @@ namespace TheGatekeeper
                 return;
             }
 
-            // Клик по часам — быстрое меню
-            if (ScaleRect(zoneClock).Contains(p))
-            {
-                ShowClockMenu();
-                return;
-            }
-
-            // Интерактивные зоны (включая zoneClock2 = index 11)
+            // Интерактивные зоны
             for (int i = 0; i < interactiveZones.Length; i++)
             {
                 if (ScaleRect(interactiveZones[i]).Contains(p))
                 {
                     if (i == 9) { ShowInterrogationPanel(); return; }
-                    if (i == 11) { ShowClockMenu(); return; }  // zoneClock2 — прямой вызов
                     ShowOverlay(i);
                     return;
                 }
@@ -380,8 +372,9 @@ namespace TheGatekeeper
             }
 
             // Клик по highlighted зоне — показываем оверлей
-            var (_, _, zoneIdx) = TutorialCards[_tutorialStep];
-            if (zoneIdx >= 0 && ScaleRect(interactiveZones[zoneIdx]).Contains(p))
+            int safeIdx = Math.Min(_tutorialStep, TutorialCards.Length - 1);
+            var (_, _, zoneIdx) = TutorialCards[safeIdx];
+            if (zoneIdx >= 0 && zoneIdx < interactiveZones.Length && ScaleRect(interactiveZones[zoneIdx]).Contains(p))
             {
                 ShowOverlay(zoneIdx);
                 return;
@@ -399,11 +392,15 @@ namespace TheGatekeeper
             bool onBtn = ScaleRect(new Rectangle(50, 548, 160, 82)).Contains(p) ||
                          ScaleRect(new Rectangle(220, 548, 170, 82)).Contains(p);
             bool onZone = false;
-            var (_, _, zoneIdx) = TutorialCards[Math.Min(_tutorialStep, TutorialCards.Length - 1)];
-            if (zoneIdx >= 0)
-                onZone = ScaleRect(interactiveZones[zoneIdx]).Contains(p);
+            int safeStep = Math.Min(_tutorialStep, TutorialCards.Length - 1);
+            if (safeStep >= 0)
+            {
+                var (_, _, zoneIdx) = TutorialCards[safeStep];
+                if (zoneIdx >= 0 && zoneIdx < interactiveZones.Length)
+                    onZone = ScaleRect(interactiveZones[zoneIdx]).Contains(p);
+            }
             Cursor = (onBtn || onZone) ? Cursors.Hand : Cursors.Default;
-            Redraw();
+            // Не вызываем Redraw() здесь — это вызывает перерисовку при каждом движении мыши
         }
 
         internal void DrawTutorialUI(Graphics g)

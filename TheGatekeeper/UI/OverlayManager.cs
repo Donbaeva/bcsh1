@@ -49,6 +49,13 @@ namespace TheGatekeeper
                 Cursor = Cursors.Default
             };
             _overlayPanel.Click += (s, e) => Hide();
+            // Пробрасываем MouseUp на Form1 — для клика по часам и другим зонам
+            _overlayPanel.MouseUp += (s, e) =>
+            {
+                if (e.Button != System.Windows.Forms.MouseButtons.Left) return;
+                var screenPt = _overlayPanel.PointToScreen(e.Location);
+                (_owner as Form1)?.TryOpenClockFromOverlay(screenPt);
+            };
 
             int cw = 680, ch = 460;
             _card = new Panel

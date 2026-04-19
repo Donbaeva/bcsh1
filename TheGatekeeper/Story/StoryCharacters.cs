@@ -26,10 +26,17 @@ namespace TheGatekeeper.Models
         public static int WolfInspections = 0;
         public static int TotalCreditsFromBribes = 0;
 
+        // Концовка 7: секретная
+        public static int HighPressureTicks = 0;  // тики где давление > 90%
+        public static int TotalTicks = 0;          // всего тиков
+        public static bool DocumentsGivenToCommissar = false; // передавал ли документы
+
         public static void Reset()
         {
             Loyalty = Errors = InfectedIn = RebelTrust = Caught = RobotsPassed = 0;
             BribesAccepted = WolfWarnings = WolfInspections = TotalCreditsFromBribes = 0;
+            HighPressureTicks = TotalTicks = 0;
+            DocumentsGivenToCommissar = false;
         }
 
         public static bool ShouldWolfInspect()
@@ -41,6 +48,17 @@ namespace TheGatekeeper.Models
 
         public static int DetermineEnding()
         {
+            // Концовка 7 (секретная): всегда высокое давление, нет взяток,
+            // нет документов комиссарам, 1-4 пропущенных синтетика
+            float pressureRatio = TotalTicks > 0 ? (float)HighPressureTicks / TotalTicks : 0f;
+            bool secretCondition =
+                pressureRatio >= 0.85f &&          // 85%+ времени давление > 90%
+                BribesAccepted == 0 &&             // ни одной взятки
+                !DocumentsGivenToCommissar &&      // не сдавал документы
+                RobotsPassed >= 1 &&               // пропустил хотя бы одного
+                RobotsPassed + InfectedIn <= 4;    // но не более 4 всего
+            if (secretCondition) return 7;
+
             if (Errors >= 5 && RobotsPassed >= 3) return 6;
             if (InfectedIn >= 4) return 5;
             if (Caught >= 3 && RebelTrust >= 3) return 4;

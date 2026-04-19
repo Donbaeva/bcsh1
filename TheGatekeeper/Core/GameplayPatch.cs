@@ -425,6 +425,7 @@ namespace TheGatekeeper
                 {
                     score += 20;
                     EndingTracker.Loyalty += 2;
+                    EndingTracker.DocumentsGivenToCommissar = true;
                     _documentVault.Remove(d);
                     AddToDialogueLog("INSPECTOR", $"[Handed \"{d.Title}\" to Commander Felicia]");
                     StartTypingEffect("You pass the document. Felicia reads it carefully. \"I'll look into this.\"");

@@ -85,16 +85,13 @@ namespace TheGatekeeper.Models
         {
             switch (day)
             {
-                case 1: return 3;
-                case 2: return 4;
+                case 1: return 5;
+                case 2: return 5;
                 case 3: return 4;
-                case 4: return 5;
-                case 5: return 5;
-                case 6: return 6;
-                case 7: return 6;
-                case 8: return 7;
-                case 9: return 7;
-                case 10: return 7;
+                case 4: return 4;
+                case 5: return 7;
+                case 6: return 7;
+                case 7: return 7;
                 default: return Math.Min(3 + day, 7);
             }
         }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Runtime.ConstrainedExecution;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -32,12 +33,12 @@ namespace TheGatekeeper
                     marco.BribeAccepted = true;
                     score += marco.BribeAmount;
                     if (storyModeActive) EndingTracker.Loyalty--;
-                    StartTypingEffect($"Вы приняли {marco.BribeAmount} кредитов. Марко ухмыльнулся и прошёл.");
+                    StartTypingEffect($"You pocket {marco.BribeAmount} credits. Marco smirks and walks through.");
                 }
                 else
                 {
                     if (storyModeActive) EndingTracker.Loyalty++;
-                    StartTypingEffect("Марко пожал плечами. «Ну и ладно. Бывает.»");
+                    StartTypingEffect("Marco shrugs. \"Your loss.\" He steps back into the queue.");
                 }
                 await Task.Delay(1500);
                 TriggerNextCharacter();
@@ -55,18 +56,18 @@ namespace TheGatekeeper
                         baroness.BribeAccepted = true;
                         score += 500;
                         if (storyModeActive) EndingTracker.Errors++;
-                        StartTypingEffect("Баронесса небрежно передала кредиты и прошла, не оглянувшись.");
+                        StartTypingEffect("The Baroness passes the credits without a word. She doesn't look back.");
                     }
                     else
                     {
                         if (storyModeActive) EndingTracker.Loyalty++;
-                        StartTypingEffect("«Неслыханно!» — воскликнула баронесса, но всё же отошла.");
+                        StartTypingEffect("\"How dare you!\" The Baroness withdraws. Dramatically.");
                     }
                 }
                 else
                 {
                     if (storyModeActive) EndingTracker.Errors++;
-                    StartTypingEffect("Неверная классификация. Баронесса — пришелец.");
+                    StartTypingEffect("Wrong classification. The Baroness is non-human. Check the ECG.");
                 }
                 await Task.Delay(1500);
                 TriggerNextCharacter();
@@ -82,12 +83,12 @@ namespace TheGatekeeper
                     fred.EnvelopeAccepted = true;
                     score += 150;
                     StoryFlags.HasanReachedLab = false;
-                    StartTypingEffect("Фред кивнул. Контейнер прошёл. Что внутри — узнают позже.");
+                    StartTypingEffect("Fred nods. The container passes. Whatever is inside — stays inside.");
                 }
                 else
                 {
                     if (storyModeActive) EndingTracker.Loyalty += 2;
-                    StartTypingEffect("Контрабанда обнаружена. Фред задержан. Протокол выполнен.");
+                    StartTypingEffect("Contraband detected. Fred detained. Protocol followed.");
                 }
                 await Task.Delay(1500);
                 TriggerNextCharacter();
@@ -97,7 +98,7 @@ namespace TheGatekeeper
             // ─── Загадочный Незнакомец — уходит сам ─────────────────────
             if (character is MysteriousStranger)
             {
-                StartTypingEffect("Незнакомец смотрит на вас. Молчит. Потом разворачивается и уходит.");
+                StartTypingEffect("The stranger stares at you. Says nothing. Then turns and walks away.");
                 await Task.Delay(3000);
                 TriggerNextCharacter();
                 return true;
@@ -109,12 +110,12 @@ namespace TheGatekeeper
                 if (decision == "ROBOT")
                 {
                     if (storyModeActive) EndingTracker.Loyalty++;
-                    StartTypingEffect($"Клонт-3 [{(clone.CloneIndex == 0 ? "А" : "Б")}] прошёл. Спор о том, кто оригинал, продолжился внутри.");
+                    StartTypingEffect($"Clone-3 [{(clone.CloneIndex == 0 ? "A" : "B")}] cleared. The argument about which one is real continues inside.");
                 }
                 else
                 {
                     if (storyModeActive) EndingTracker.Errors++;
-                    StartTypingEffect("Неверная классификация. Оба — роботы. Невзирая на их споры.");
+                    StartTypingEffect("Wrong classification. Both are robots. Whatever they were arguing about.");
                 }
                 await Task.Delay(1500);
                 TriggerNextCharacter();
@@ -124,25 +125,110 @@ namespace TheGatekeeper
             return false;
         }
 
-        // ─── Диалог взятки ───────────────────────────────────────────────
-        private DialogResult ShowBribeDialog(int amount, string name)
+        // ─── Внутриигровой диалог взятки ────────────────────────────────
+        private bool ShowInGameBribeDialog(int amount, string name,
+            string body = null, string acceptLabel = null, string declineLabel = null)
         {
-            return MessageBox.Show(
-                $"{name} предлагает {amount} кредитов.\n\nПринять взятку?",
-                "ПРЕДЛОЖЕНИЕ",
-                MessageBoxButtons.YesNo,
-                MessageBoxIcon.Question);
+            bool accepted = false;
+
+            var dlg = new System.Windows.Forms.Form
+            {
+                Size = new System.Drawing.Size(520, 230),
+                BackColor = System.Drawing.Color.FromArgb(10, 14, 20),
+                StartPosition = System.Windows.Forms.FormStartPosition.CenterParent,
+                FormBorderStyle = System.Windows.Forms.FormBorderStyle.None,
+                TopMost = true,
+                ShowInTaskbar = false
+            };
+            dlg.Paint += (s, pe) =>
+            {
+                var g = pe.Graphics;
+                using (var pen = new System.Drawing.Pen(System.Drawing.Color.FromArgb(140, 100, 60, 20), 1))
+                    g.DrawRectangle(pen, 0, 0, dlg.Width - 1, dlg.Height - 1);
+                using (var br = new System.Drawing.Drawing2D.LinearGradientBrush(
+                    new System.Drawing.Rectangle(0, 0, dlg.Width, 3),
+                    System.Drawing.Color.FromArgb(180, 200, 140, 40),
+                    System.Drawing.Color.Transparent,
+                    System.Drawing.Drawing2D.LinearGradientMode.Horizontal))
+                    g.FillRectangle(br, 0, 0, dlg.Width, 3);
+            };
+
+            string bodyText = body ?? $"{name} slides you {amount} credits.No words. The meaning is clear.Your record won't show this — if you accept.";
+
+            dlg.Controls.Add(new System.Windows.Forms.Label
+            {
+                Text = "💰  OFFER",
+                Location = new System.Drawing.Point(16, 12),
+                Size = new System.Drawing.Size(484, 18),
+                ForeColor = System.Drawing.Color.FromArgb(200, 160, 40),
+                Font = new System.Drawing.Font("Consolas", 9, System.Drawing.FontStyle.Bold),
+                BackColor = System.Drawing.Color.Transparent
+            });
+            dlg.Controls.Add(new System.Windows.Forms.Label
+            {
+                Location = new System.Drawing.Point(16, 32),
+                Size = new System.Drawing.Size(484, 1),
+                BackColor = System.Drawing.Color.FromArgb(60, 180, 130, 30)
+            });
+            dlg.Controls.Add(new System.Windows.Forms.Label
+            {
+                Text = bodyText,
+                Location = new System.Drawing.Point(16, 40),
+                Size = new System.Drawing.Size(484, 100),
+                ForeColor = System.Drawing.Color.FromArgb(190, 200, 210),
+                Font = new System.Drawing.Font("Consolas", 9),
+                BackColor = System.Drawing.Color.Transparent
+            });
+
+            var btnYes = new System.Windows.Forms.Button
+            {
+                Text = acceptLabel ?? $"ACCEPT — take {amount} credits, let through",
+                Location = new System.Drawing.Point(16, 148),
+                Size = new System.Drawing.Size(484, 34),
+                FlatStyle = System.Windows.Forms.FlatStyle.Flat,
+                BackColor = System.Drawing.Color.FromArgb(15, 45, 18),
+                ForeColor = System.Drawing.Color.FromArgb(0, 200, 80),
+                Font = new System.Drawing.Font("Consolas", 8, System.Drawing.FontStyle.Bold),
+                Cursor = System.Windows.Forms.Cursors.Hand
+            };
+            btnYes.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(0, 120, 50);
+            btnYes.Click += (s, e) => { accepted = true; dlg.Close(); };
+
+            var btnNo = new System.Windows.Forms.Button
+            {
+                Text = declineLabel ?? "REFUSE — process by the book",
+                Location = new System.Drawing.Point(16, 186),
+                Size = new System.Drawing.Size(484, 34),
+                FlatStyle = System.Windows.Forms.FlatStyle.Flat,
+                BackColor = System.Drawing.Color.FromArgb(30, 12, 12),
+                ForeColor = System.Drawing.Color.FromArgb(180, 80, 80),
+                Font = new System.Drawing.Font("Consolas", 8),
+                Cursor = System.Windows.Forms.Cursors.Hand
+            };
+            btnNo.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(100, 40, 40);
+            btnNo.Click += (s, e) => { accepted = false; dlg.Close(); };
+
+            dlg.Controls.Add(btnYes); dlg.Controls.Add(btnNo);
+            dlg.KeyDown += (s, e) => { if (e.KeyCode == System.Windows.Forms.Keys.Escape) dlg.Close(); };
+            dlg.ShowDialog(this);
+            return accepted;
         }
 
-        private DialogResult ShowEnvelopeDialog()
-        {
-            return MessageBox.Show(
-                "Тихий Фред кладёт конверт: 150 кредитов и записка «Не смотри в контейнер».\n\n" +
-                "Принять конверт и пропустить контейнер?",
-                "КОНВЕРТ",
-                MessageBoxButtons.YesNo,
-                MessageBoxIcon.Question);
-        }
+        // Обёртка для обратной совместимости
+        private System.Windows.Forms.DialogResult ShowBribeDialog(int amount, string name)
+            => ShowInGameBribeDialog(amount, name)
+               ? System.Windows.Forms.DialogResult.Yes
+               : System.Windows.Forms.DialogResult.No;
+
+        private System.Windows.Forms.DialogResult ShowEnvelopeDialog()
+    => ShowInGameBribeDialog(150, "Silent Fred",
+        "Fred sets an envelope on the counter. 150 credits and a handwritten note:\n\n" +
+        "  'Don't look in the container.'\n\n" +
+        "Accept and wave the container through?",
+        "ACCEPT — pocket the credits, ignore the container",
+        "REFUSE — inspect everything, by the book")
+        ? System.Windows.Forms.DialogResult.Yes
+        : System.Windows.Forms.DialogResult.No;
 
         // ─── Переход к следующему персонажу (используется особыми персонажами)
         private void TriggerNextCharacter()
@@ -227,173 +313,291 @@ namespace TheGatekeeper
                 Font = new System.Drawing.Font("Consolas", 8),
                 Cursor = System.Windows.Forms.Cursors.Hand
             };
-        btnAccept.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(0, 120, 50);
+            btnAccept.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(0, 120, 50);
             btnAccept.Click += (s, e) => { accepted = true; decided = true; dlg.Close(); };
 
-    var btnRefuse = new System.Windows.Forms.Button
-    {
-        Text = "🚫 REFUSE — process as declared",
-        Location = new System.Drawing.Point(16, 170),
-        Size = new System.Drawing.Size(468, 34),
-        FlatStyle = System.Windows.Forms.FlatStyle.Flat,
-        BackColor = System.Drawing.Color.FromArgb(35, 15, 15),
-        ForeColor = System.Drawing.Color.FromArgb(200, 80, 80),
-        Font = new System.Drawing.Font("Consolas", 8),
-        Cursor = System.Windows.Forms.Cursors.Hand
-    };
-    btnRefuse.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(100, 30, 30);
+            var btnRefuse = new System.Windows.Forms.Button
+            {
+                Text = "🚫 REFUSE — process as declared",
+                Location = new System.Drawing.Point(16, 170),
+                Size = new System.Drawing.Size(468, 34),
+                FlatStyle = System.Windows.Forms.FlatStyle.Flat,
+                BackColor = System.Drawing.Color.FromArgb(35, 15, 15),
+                ForeColor = System.Drawing.Color.FromArgb(200, 80, 80),
+                Font = new System.Drawing.Font("Consolas", 8),
+                Cursor = System.Windows.Forms.Cursors.Hand
+            };
+            btnRefuse.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(100, 30, 30);
             btnRefuse.Click += (s, e) => { accepted = false; decided = true; dlg.Close(); };
 
-dlg.Controls.Add(btnAccept);
-dlg.Controls.Add(btnRefuse);
-dlg.ShowDialog(this);
+            dlg.Controls.Add(btnAccept);
+            dlg.Controls.Add(btnRefuse);
+            dlg.ShowDialog(this);
 
-if (!decided) return false;
+            if (!decided) return false;
 
-if (accepted)
-{
-    // Принял взятку
-    credits += bribeAmount;
-    EndingTracker.Loyalty -= 2;
-    UpdateStatsUI();
-    string pass = character is Character.Robot
-        ? "The robot steps through without another word."
-        : "The alien nods and slips past. No questions asked.";
-    StartTypingEffect($"[Bribe accepted: +{bribeAmount} credits] {pass}");
-    AddToDialogueLog("INSPECTOR", $"[Accepted bribe: {bribeAmount}cr]");
+            if (accepted)
+            {
+                // Принял взятку — обновляем счётчик коррупции
+                credits += bribeAmount;
+                EndingTracker.BribesAccepted++;
+                EndingTracker.TotalCreditsFromBribes += bribeAmount;
+                EndingTracker.Loyalty -= 2;
+                UpdateStatsUI();
 
-    // Засчитываем как HUMAN (пропустили)
-    dailyDecisions.Add((character, "HUMAN"));
-    charactersChecked++;
-    UpdateStatsUI();
-    isClosing = true;
-    shutterTimer.Start();
-    return true;
-}
-else
-{
-    // Отказал — продолжаем обработку как обычно
-    StartTypingEffect("Bribe refused. Processing as declared.");
-    await Task.Delay(800);
-    return false;
-}
+                // Проверяем — должен ли Волк прийти с проверкой?
+                if (EndingTracker.ShouldWolfInspect())
+                {
+                    // Вставляем WolfCorruptionCheck следующим в очередь
+                    var wolfCheck = new WolfCorruptionCheck(day);
+                    wolfCheck.Dialogue = "Inspector. A word.";
+                    todayCast.Insert(currentCharacterIndex + 1, (Character)(ObserverCharacter)wolfCheck);
+                    dailyQuota = todayCast.Count;
+                }
+                string pass = character is Character.Robot
+                    ? "The robot steps through without another word."
+                    : "The alien nods and slips past. No questions asked.";
+                StartTypingEffect($"[Bribe accepted: +{bribeAmount} credits] {pass}");
+                AddToDialogueLog("INSPECTOR", $"[Accepted bribe: {bribeAmount}cr]");
+
+                // Засчитываем как HUMAN (пропустили)
+                dailyDecisions.Add((character, "HUMAN"));
+                charactersChecked++;
+                UpdateStatsUI();
+                isClosing = true;
+                shutterTimer.Start();
+                return true;
+            }
+            else
+            {
+                // Отказал — продолжаем обработку как обычно
+                StartTypingEffect("Bribe refused. Processing as declared.");
+                await Task.Delay(800);
+                return false;
+            }
         }
 
-                // ═══════════════════════════════════════════════════════════════
+        // ─── Допрос Волка при коррупционной проверке ─────────────────────
+        internal void StartWolfCorruptionInterrogation()
+        {
+            pressureTimer.Stop();
+
+            var dlg = new System.Windows.Forms.Form
+            {
+                Size = new System.Drawing.Size(560, 340),
+                BackColor = System.Drawing.Color.FromArgb(14, 6, 6),
+                StartPosition = System.Windows.Forms.FormStartPosition.CenterParent,
+                FormBorderStyle = System.Windows.Forms.FormBorderStyle.None,
+                TopMost = true
+            };
+            dlg.Paint += (s, pe) => {
+                using (var pen = new System.Drawing.Pen(System.Drawing.Color.FromArgb(160, 180, 40, 40), 1))
+                    pe.Graphics.DrawRectangle(pen, 0, 0, dlg.Width - 1, dlg.Height - 1);
+                using (var pen = new System.Drawing.Pen(System.Drawing.Color.FromArgb(200, 200, 60, 60), 2))
+                {
+                    int a = 16;
+                    pe.Graphics.DrawLine(pen, 0, 0, a, 0); pe.Graphics.DrawLine(pen, 0, 0, 0, a);
+                    pe.Graphics.DrawLine(pen, dlg.Width - a, 0, dlg.Width, 0);
+                    pe.Graphics.DrawLine(pen, dlg.Width, 0, dlg.Width, a);
+                }
+            };
+
+            string warningText = EndingTracker.WolfWarnings == 0
+            ? "Inspector. I've received reports of financial irregularities at your post.\n\n" +
+              $"According to our records, you have accepted {EndingTracker.BribesAccepted} unauthorized payment(s).\n" +
+              $"Total: {EndingTracker.TotalCreditsFromBribes} credits.\n\n" +
+              "I am confiscating these funds. Consider this your first — and only — warning.\n" +
+              "A second offence will result in immediate termination."
+            : "Inspector. You were warned.\n\n" +
+              $"You have accepted {EndingTracker.BribesAccepted} bribe(s) totaling {EndingTracker.TotalCreditsFromBribes} credits.\n\n" +
+              "This is your FINAL warning. The next offence ends your employment.\n" +
+              "All accumulated funds are hereby confiscated.";
+
+
+            dlg.Controls.Add(new System.Windows.Forms.Label
+            {
+                Text = "⚠  COMMISSAR WOLF — CORRUPTION INVESTIGATION",
+                Location = new System.Drawing.Point(16, 14),
+                Size = new System.Drawing.Size(528, 20),
+                ForeColor = System.Drawing.Color.FromArgb(220, 80, 80),
+                Font = new System.Drawing.Font("Consolas", 9, System.Drawing.FontStyle.Bold),
+                BackColor = System.Drawing.Color.Transparent
+            });
+            dlg.Controls.Add(new System.Windows.Forms.Label
+            {
+                Location = new System.Drawing.Point(16, 36),
+                Size = new System.Drawing.Size(528, 1),
+                BackColor = System.Drawing.Color.FromArgb(80, 180, 40, 40)
+            });
+            dlg.Controls.Add(new System.Windows.Forms.Label
+            {
+                Text = warningText,
+                Location = new System.Drawing.Point(16, 44),
+                Size = new System.Drawing.Size(528, 180),
+                ForeColor = System.Drawing.Color.FromArgb(200, 180, 180),
+                Font = new System.Drawing.Font("Consolas", 9),
+                BackColor = System.Drawing.Color.Transparent
+            });
+
+            // Конфискуем кредиты
+            int confiscated = credits;
+            credits = 0;
+            EndingTracker.WolfWarnings++;
+            EndingTracker.Loyalty -= 2;
+            UpdateStatsUI();
+
+            var btnOk = new System.Windows.Forms.Button
+            {
+                Text = $"[ UNDERSTOOD — {confiscated} credits confiscated ]",
+                Location = new System.Drawing.Point(16, 240),
+                Size = new System.Drawing.Size(528, 44),
+                FlatStyle = System.Windows.Forms.FlatStyle.Flat,
+                BackColor = System.Drawing.Color.FromArgb(30, 15, 15),
+                ForeColor = System.Drawing.Color.FromArgb(200, 100, 100),
+                Font = new System.Drawing.Font("Consolas", 9, System.Drawing.FontStyle.Bold),
+                Cursor = System.Windows.Forms.Cursors.Hand
+            };
+            btnOk.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(120, 50, 50);
+            btnOk.Click += (s, e) => {
+                dlg.Close();
+                // Третья проверка = конец игры
+                if (EndingTracker.WolfWarnings >= 3)
+                {
+                    System.Windows.Forms.MessageBox.Show(
+                    "You were warned twice.\n\n" +
+                    "Your post is terminated effective immediately.\n" +
+                    "All assets seized. Criminal charges pending.",
+                    "DISMISSAL",
+                    System.Windows.Forms.MessageBoxButtons.OK,
+                    System.Windows.Forms.MessageBoxIcon.Error);
+                    this.Close();
+                }
+                else
+                {
+                    StartTypingEffect("Wolf leaves. You have " + (3 - EndingTracker.WolfWarnings) +
+                        " chance(s) remaining before termination.");
+                    pressureTimer.Start();
+                }
+            };
+            dlg.Controls.Add(btnOk);
+            dlg.ShowDialog(this);
+        }
+
+        // ═══════════════════════════════════════════════════════════════
         //  ФИНАЛЬНЫЙ ЭКРАН — концовки сюжетного режима
         // ═══════════════════════════════════════════════════════════════
         private void ShowStoryEnding()
-{
-    int endingId = EndingTracker.DetermineEnding();
-    pressureTimer.Stop();
+        {
+            int endingId = EndingTracker.DetermineEnding();
+            pressureTimer.Stop();
 
-    string title, text;
-    switch (endingId)
-    {
-        case 1:
-            title = "★ ПОЧЁТНЫЙ ГРАЖДАНИН";
-            text = "Комиссар Волк лично пожимает вам руку.\n\n" +
-                    "Ваше фото появляется на стенде «Лучший инспектор месяца».\n\n" +
-                    "Колония жива. Вы делали всё правильно.\n\n" +
-                    "«Этого достаточно... наверное.»";
-            break;
-        case 2:
-            title = "→ ПОБЕГ";
-            text = "Ночь. Шлюз 9.\n\n" +
-                    "Мирра, Зоя и четверо других ждут.\n" +
-                    "Корабль без опознавательных знаков уходит в темноту.\n\n" +
-                    "Мирра: «Там, куда мы летим, нет государств.»\n\n" +
-                    "Звёзды.";
-            break;
-        case 3:
-            title = "✗ НЕУСПЕХ";
-            text = "Комиссар Волк зачитывает список ваших ошибок.\n\n" +
-                    (EndingTracker.Errors >= 8
-                        ? "Трибунал. Расстрел на рассвете."
-                        : "Вас снимают с поста и переводят в трудовой отсек.");
-            break;
-        case 4:
-            title = "✗ ИЗМЕНА РАСКРЫТА";
-            text = "Агент «Серый» приходит на рассвете с ордером.\n\n" +
-                    "На допросе — имена, шлюз 9, корабль.\n" +
-                    "Мирра и Зоя схвачены.\n\n" +
-                    "Камера. Темнота.";
-            break;
-        case 5:
-            title = "☣ ЗАРАЖЕНИЕ";
-            text = "Красные огни. Сирены.\n\n" +
-                    "«Сектора A, B, C закрыты.\n" +
-                    "Синее Гниение подтверждено.»\n\n" +
-                    "Вы смотрите на своё отражение.\n" +
-                    "На щеке — первое пятно.\n\n" +
-                    "«Ты открыл им дверь.»";
-            break;
-        case 6:
-            title = "⚠ ЗАХВАТ";
-            text = "Серв-Легион и союзные пришельцы\n" +
-                    "контролируют три сектора.\n\n" +
-                    "Комиссар Волк мёртв.\n\n" +
-                    "Вас ведут на допрос.\n" +
-                    "За стеклом — чужая колония.";
-            break;
-        default:
-            title = "КОНЕЦ";
-            text = "Смена окончена.";
-            break;
-    }
+            string title, text;
+            switch (endingId)
+            {
+                case 1:
+                    title = "★ ПОЧЁТНЫЙ ГРАЖДАНИН";
+                    text = "Комиссар Волк лично пожимает вам руку.\n\n" +
+                            "Ваше фото появляется на стенде «Лучший инспектор месяца».\n\n" +
+                            "Колония жива. Вы делали всё правильно.\n\n" +
+                            "«Этого достаточно... наверное.»";
+                    break;
+                case 2:
+                    title = "→ ПОБЕГ";
+                    text = "Ночь. Шлюз 9.\n\n" +
+                            "Мирра, Зоя и четверо других ждут.\n" +
+                            "Корабль без опознавательных знаков уходит в темноту.\n\n" +
+                            "Мирра: «Там, куда мы летим, нет государств.»\n\n" +
+                            "Звёзды.";
+                    break;
+                case 3:
+                    title = "✗ НЕУСПЕХ";
+                    text = "Комиссар Волк зачитывает список ваших ошибок.\n\n" +
+                            (EndingTracker.Errors >= 8
+                                ? "Трибунал. Расстрел на рассвете."
+                                : "Вас снимают с поста и переводят в трудовой отсек.");
+                    break;
+                case 4:
+                    title = "✗ ИЗМЕНА РАСКРЫТА";
+                    text = "Агент «Серый» приходит на рассвете с ордером.\n\n" +
+                            "На допросе — имена, шлюз 9, корабль.\n" +
+                            "Мирра и Зоя схвачены.\n\n" +
+                            "Камера. Темнота.";
+                    break;
+                case 5:
+                    title = "☣ ЗАРАЖЕНИЕ";
+                    text = "Красные огни. Сирены.\n\n" +
+                            "«Сектора A, B, C закрыты.\n" +
+                            "Синее Гниение подтверждено.»\n\n" +
+                            "Вы смотрите на своё отражение.\n" +
+                            "На щеке — первое пятно.\n\n" +
+                            "«Ты открыл им дверь.»";
+                    break;
+                case 6:
+                    title = "⚠ ЗАХВАТ";
+                    text = "Серв-Легион и союзные пришельцы\n" +
+                            "контролируют три сектора.\n\n" +
+                            "Комиссар Волк мёртв.\n\n" +
+                            "Вас ведут на допрос.\n" +
+                            "За стеклом — чужая колония.";
+                    break;
+                default:
+                    title = "КОНЕЦ";
+                    text = "Смена окончена.";
+                    break;
+            }
 
-    if (StoryFlags.HasanReachedLab && endingId != 6)
-        text += "\n\n[Эпилог: Профессор Хасан нашёл частичную формулу вакцины.\nЕсть шанс.]";
+            if (StoryFlags.HasanReachedLab && endingId != 6)
+                text += "\n\n[Эпилог: Профессор Хасан нашёл частичную формулу вакцины.\nЕсть шанс.]";
 
-    var endingForm = new System.Windows.Forms.Form
-    {
-        Text = title,
-        Size = new System.Drawing.Size(560, 420),
-        BackColor = System.Drawing.Color.FromArgb(10, 12, 18),
-        ForeColor = System.Drawing.Color.FromArgb(180, 200, 220),
-        StartPosition = FormStartPosition.CenterParent,
-        FormBorderStyle = FormBorderStyle.FixedDialog,
-        MaximizeBox = false,
-        MinimizeBox = false,
-        Font = new System.Drawing.Font("Consolas", 11)
-    };
+            var endingForm = new System.Windows.Forms.Form
+            {
+                Text = title,
+                Size = new System.Drawing.Size(560, 420),
+                BackColor = System.Drawing.Color.FromArgb(10, 12, 18),
+                ForeColor = System.Drawing.Color.FromArgb(180, 200, 220),
+                StartPosition = FormStartPosition.CenterParent,
+                FormBorderStyle = FormBorderStyle.FixedDialog,
+                MaximizeBox = false,
+                MinimizeBox = false,
+                Font = new System.Drawing.Font("Consolas", 11)
+            };
 
-    var lblTitle = new System.Windows.Forms.Label
-    {
-        Text = title,
-        Location = new System.Drawing.Point(20, 20),
-        Size = new System.Drawing.Size(510, 30),
-        ForeColor = endingId == 1 ? System.Drawing.Color.Cyan
-                  : endingId == 2 ? System.Drawing.Color.DodgerBlue
-                  : System.Drawing.Color.Tomato,
-        Font = new System.Drawing.Font("Consolas", 13, System.Drawing.FontStyle.Bold)
-    };
+            var lblTitle = new System.Windows.Forms.Label
+            {
+                Text = title,
+                Location = new System.Drawing.Point(20, 20),
+                Size = new System.Drawing.Size(510, 30),
+                ForeColor = endingId == 1 ? System.Drawing.Color.Cyan
+                          : endingId == 2 ? System.Drawing.Color.DodgerBlue
+                          : System.Drawing.Color.Tomato,
+                Font = new System.Drawing.Font("Consolas", 13, System.Drawing.FontStyle.Bold)
+            };
 
-    var lblText = new System.Windows.Forms.Label
-    {
-        Text = text,
-        Location = new System.Drawing.Point(20, 60),
-        Size = new System.Drawing.Size(510, 280),
-        ForeColor = System.Drawing.Color.FromArgb(180, 200, 220)
-    };
+            var lblText = new System.Windows.Forms.Label
+            {
+                Text = text,
+                Location = new System.Drawing.Point(20, 60),
+                Size = new System.Drawing.Size(510, 280),
+                ForeColor = System.Drawing.Color.FromArgb(180, 200, 220)
+            };
 
-    var btnClose = new System.Windows.Forms.Button
-    {
-        Text = "ЗАВЕРШИТЬ",
-        Location = new System.Drawing.Point(200, 355),
-        Size = new System.Drawing.Size(150, 36),
-        FlatStyle = FlatStyle.Flat,
-        ForeColor = System.Drawing.Color.Cyan
-    };
-    btnClose.FlatAppearance.BorderColor =
-        System.Drawing.Color.FromArgb(51, 102, 170);
-    btnClose.Click += (s, e) => { endingForm.Close(); this.Close(); };
+            var btnClose = new System.Windows.Forms.Button
+            {
+                Text = "FINISH",
+                Location = new System.Drawing.Point(200, 355),
+                Size = new System.Drawing.Size(150, 36),
+                FlatStyle = FlatStyle.Flat,
+                ForeColor = System.Drawing.Color.Cyan
+            };
+            btnClose.FlatAppearance.BorderColor =
+                System.Drawing.Color.FromArgb(51, 102, 170);
+            btnClose.Click += (s, e) => { endingForm.Close(); this.Close(); };
 
-    endingForm.Controls.AddRange(
-        new System.Windows.Forms.Control[] { lblTitle, lblText, btnClose });
+            endingForm.Controls.AddRange(
+                new System.Windows.Forms.Control[] { lblTitle, lblText, btnClose });
 
-    EndingTracker.Reset();
-    endingForm.ShowDialog(this);
-}
+            EndingTracker.Reset();
+            endingForm.ShowDialog(this);
+        }
     }
 }

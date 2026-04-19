@@ -21,13 +21,18 @@ namespace TheGatekeeper
                 case 2: return GetSystemDataNote(character);
 
                 case 3:
-                    return ("FIELD INSPECTION LOG",
-                                 "Use the checkboxes to verify subject markers.\n\n" +
-                                 "Quick Reference:\n" +
-                                 "✓ Thermal signature\n" +
-                                 "✓ Speech patterns\n" +
-                                 "✓ Response timing\n" +
-                                 "✓ Identity verification");
+                    // Стикер статус-смены — показывает то что раньше было в HUD
+                    int dayN = character?.Day ?? 1;
+                    return ("SHIFT STATUS",
+                                 $"DAY      {dayN} / 7\n" +
+                                 $"QUOTA    see checklist\n\n" +
+                                 "PRESSURE see clock\n\n" +
+                                 "──────────────────\n" +
+                                 "QUICK REFERENCE:\n" +
+                                 "  Click CLOCK → shift menu\n" +
+                                 "  Click DIALOGUE → log\n" +
+                                 "  Click RIGHT SCREEN → docs\n" +
+                                 "  Small radio → interrogate");
 
                 case 4: return GetAccessCodesNote(character);
 

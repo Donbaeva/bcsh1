@@ -13,6 +13,7 @@ namespace TheGatekeeper.Models
         public string AccessZone { get; set; }
         public Image Photo { get; set; }
         public string Dialogue { get; set; }
+        public string CarriedDocumentType { get; set; } = null; // тип документа который несёт персонаж
         public string Species { get; set; }
         public bool IsObvious { get; set; }
         public string Occupation { get; set; }

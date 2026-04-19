@@ -333,10 +333,10 @@ namespace TheGatekeeper
         {
             switch (mode)
             {
-                case TheGatekeeper.Models.GameMode.StoryMode: return "ПРОТОКОЛ ВРАТА";
-                case TheGatekeeper.Models.GameMode.HuntMode: return "ОХОТА";
-                case TheGatekeeper.Models.GameMode.EndlessMode: return "БЕСКОНЕЧНАЯ СМЕНА";
-                default: return "ПРОТОКОЛ ВРАТА";
+                case TheGatekeeper.Models.GameMode.StoryMode: return "GATE PROTOCOL";
+                case TheGatekeeper.Models.GameMode.HuntMode: return "HUNT MODE";
+                case TheGatekeeper.Models.GameMode.EndlessMode: return "ENDLESS SHIFT";
+                default: return "GATE PROTOCOL";
             }
         }
 
@@ -345,11 +345,11 @@ namespace TheGatekeeper
             switch (mode)
             {
                 case TheGatekeeper.Models.GameMode.StoryMode:
-                    return "10 дней · сюжет · 7 концовок";
+                    return "7 days · story · 7 endings";
                 case TheGatekeeper.Models.GameMode.HuntMode:
-                    return "найди злодея среди толпы · один шанс";
+                    return "find the villain · one chance";
                 case TheGatekeeper.Models.GameMode.EndlessMode:
-                    return "бесконечный поток · таблица рекордов";
+                    return "endless queue · high score";
                 default: return "";
             }
         }

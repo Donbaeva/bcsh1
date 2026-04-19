@@ -71,9 +71,17 @@ namespace TheGatekeeper
 
             if (currentCharacterData != null && !currentCharacterData.IsObserver)
             {
-                if (ScaleRect(redZoneBase).Contains(e.Location)) newHoveredBtn = 0;
-                else if (ScaleRect(blueZoneBase).Contains(e.Location)) newHoveredBtn = 1;
-                else if (ScaleRect(greenZoneBase).Contains(e.Location)) newHoveredBtn = 2;
+                // Круглые кнопки — проверка через окружность
+                float sx_ = (float)ClientSize.Width / BaseW;
+                float sy_ = (float)ClientSize.Height / BaseH;
+                int scaledR_ = (int)(buttonRadiusBase * Math.Min(sx_, sy_));
+                Point mousePos_ = e.Location;
+                Point rC_ = new Point((int)(redCenterBase.X * sx_), (int)(redCenterBase.Y * sy_));
+                Point bC_ = new Point((int)(blueCenterBase.X * sx_), (int)(blueCenterBase.Y * sy_));
+                Point gC_ = new Point((int)(greenCenterBase.X * sx_), (int)(greenCenterBase.Y * sy_));
+                if (IsPointInCircle(mousePos_, rC_, scaledR_)) newHoveredBtn = 0;
+                else if (IsPointInCircle(mousePos_, bC_, scaledR_)) newHoveredBtn = 1;
+                else if (IsPointInCircle(mousePos_, gC_, scaledR_)) newHoveredBtn = 2;
             }
 
             bool changed = (hoveredZone != newHovered) || (hoveredButton != newHoveredBtn);
@@ -82,6 +90,7 @@ namespace TheGatekeeper
 
             bool onActive = newHovered >= 0
                 || newHoveredBtn >= 0
+                || ScaleRect(zoneClock).Contains(e.Location)
                 || (currentCharacterData?.IsObserver == true && ScaleRect(observerPassZone).Contains(e.Location))
                 || ScaleRect(zoneDialogueScreen).Contains(e.Location);
 
@@ -112,12 +121,20 @@ namespace TheGatekeeper
                 return;
             }
 
-            // Интерактивные зоны
+            // Клик по часам — быстрое меню
+            if (ScaleRect(zoneClock).Contains(p))
+            {
+                ShowClockMenu();
+                return;
+            }
+
+            // Интерактивные зоны (включая zoneClock2 = index 11)
             for (int i = 0; i < interactiveZones.Length; i++)
             {
                 if (ScaleRect(interactiveZones[i]).Contains(p))
                 {
                     if (i == 9) { ShowInterrogationPanel(); return; }
+                    if (i == 11) { ShowClockMenu(); return; }  // zoneClock2 — прямой вызов
                     ShowOverlay(i);
                     return;
                 }
@@ -133,28 +150,31 @@ namespace TheGatekeeper
                 return;
             }
 
-            // Кнопки классификации
+            // Круглые кнопки — проверка через окружности
+            float sx = (float)ClientSize.Width / BaseW;
+            float sy = (float)ClientSize.Height / BaseH;
+            int scaledR = (int)(buttonRadiusBase * Math.Min(sx, sy));
+            Point redC = new Point((int)(redCenterBase.X * sx), (int)(redCenterBase.Y * sy));
+            Point blueC = new Point((int)(blueCenterBase.X * sx), (int)(blueCenterBase.Y * sy));
+            Point greenC = new Point((int)(greenCenterBase.X * sx), (int)(greenCenterBase.Y * sy));
+
             string decision = "";
             int btnIndex = -1;
             Color flashCol = Color.Transparent;
 
-            if (ScaleRect(redZoneBase).Contains(p)) { decision = "ROBOT"; btnIndex = 0; flashCol = Color.Red; }
-            else if (ScaleRect(blueZoneBase).Contains(p)) { decision = "ALIEN"; btnIndex = 1; flashCol = Color.DodgerBlue; }
-            else if (ScaleRect(greenZoneBase).Contains(p)) { decision = "HUMAN"; btnIndex = 2; flashCol = Color.Lime; }
+            if (IsPointInCircle(p, redC, scaledR)) { decision = "ROBOT"; btnIndex = 0; flashCol = Color.Red; }
+            else if (IsPointInCircle(p, blueC, scaledR)) { decision = "ALIEN"; btnIndex = 1; flashCol = Color.DodgerBlue; }
+            else if (IsPointInCircle(p, greenC, scaledR)) { decision = "HUMAN"; btnIndex = 2; flashCol = Color.Lime; }
 
             if (btnIndex < 0) return;
 
-            // Подсвечиваем нажатую кнопку
             TriggerButtonGlow(btnIndex);
-
             isAnimating = true;
-            currentBtnImage = GetButtonImage(btnIndex);
             pressureTimer.Stop();
 
             StartFlash(flashCol);
             Redraw();
             await Task.Delay(250);
-            currentBtnImage = btnDefault;
 
             await ProcessDecision(decision);
 
@@ -223,11 +243,11 @@ namespace TheGatekeeper
         // ════════════════════════════════════════════════════════════════════
         private readonly string[] _tutorialHints = new[]
         {
-            "МОНИТОР — ДОКУМЕНТЫ\nПроверяй имя, профессию и код доступа.\nСверяй код с тем что говорит субъект.",
-            "ЭКГ — МОНИТОР СЕРДЦА\nРоботы: механические паузы между пиками.\nПришельцы: нестандартная форма волны.\nЛюди: обычный синусовый ритм.",
-            "ДОЗИМЕТР — РАДИАЦИЯ\n⚠ Сегодня прибор на обслуживании.\nДанные ненадёжны — не используй сегодня.",
-            "СТИКЕРЫ — ЗАМЕТКИ\nЗдесь всегда актуальная подсказка:\nкоды доступа, признаки роботов и пришельцев.",
-            "СТИКЕРЫ — КОДЫ ДОСТУПА\nКоды меняются каждый день.\nСубъект назвал старый код? Подозрительно.",
+            "MONITOR — DOCUMENTS\nCheck name, occupation and access code.\nCompare the code with what the subject tells you.",
+            "ECG — CARDIAC MONITOR\nRobots: mechanical pauses between peaks.\nAliens: irregular waveform.\nHumans: normal sinus rhythm.",
+            "DOSIMETER — RADIATION\n⚠ Unit offline today — scheduled maintenance.\nReadings unreliable. Do not use today.",
+            "STICKERS — NOTES\nAlways contains current hints:\naccess codes, signs of robots and aliens.",
+            "STICKERS — ACCESS CODES\nCodes change every day.\nSubject gave an old code? That's suspicious.",
             "СТИКЕРЫ — ПРИЗНАКИ ОПАСНОСТИ\nКраткая шпаргалка — открывай в сложных случаях.",
             "СТИКЕРЫ — ДОПОЛНИТЕЛЬНО\nПредупреждения командования. Читай в начале смены.",
             "ПРАВЫЙ МОНИТОР — ДАННЫЕ СУБЪЕКТА\nИмя, профессия, код доступа — для быстрой сверки.",
@@ -240,21 +260,78 @@ namespace TheGatekeeper
         //  ТУТОРИАЛ — нарративный
         // ════════════════════════════════════════════════════════════════
 
-        private static readonly string[] TutorialLines = {
-            "Hey. First day on the job — welcome to Gate Inspection.",
-            "Your task: decide if each subject is HUMAN, ROBOT, or ALIEN.",
-            "Press RED (Robot), BLUE (Alien), or GREEN (Human) to give your verdict.",
-            "Use the SMALL RADIO on the right to question subjects about name, code, purpose.",
-            "Click the screen UNDER THE STICKERS to open the subject document — check every field.",
-            "The DIALOGUE SCREEN below shows what subjects say. Click it to re-read the full log.",
-            "Stickers contain today's access codes and threat signs — read them before each subject.",
-            "3 wrong decisions ends your shift early. Take your time. The pressure clock ticks.",
-            "Ready? Click START SHIFT — or SKIP if you know the drill.",
-        };
-
+        // ════════════════════════════════════════════════════════════════
+        //  ТУТОРИАЛ — карточки поверх игры
+        // ════════════════════════════════════════════════════════════════
         private int _tutorialStep = 0;
         private bool _tutorialActive = false;
         private Timer _tutorialTimer;
+
+        // Каждая карточка: (заголовок, описание, иконка зоны -1=нет)
+        private static readonly (string Header, string Body, int Zone)[] TutorialCards = {
+            ("WELCOME TO GATE 7",
+             "This is the last checkpoint before the colony interior.\n\nYour job: classify every subject that approaches.\nLet the right ones through. Stop the wrong ones.\nEvery mistake goes on your record.",
+             -1),
+            ("LEFT PANEL — BIOMETRIC MONITORS",
+             "The three screens on the LEFT are your detection tools:\n\n" +
+             "  TOP      →  SUBJECT STATUS  (organic / synthetic readings)\n" +
+             "  MIDDLE   →  PULSE MONITOR   (ECG — watch the waveform)\n" +
+             "  BOTTOM   →  RADIATION / BIO (contamination scanner)\n\n" +
+             "Click each screen to open its full readout.",
+             0),
+            ("HOW TO READ BIOMETRICS",
+             "HUMAN:   normal ECG, body temp 36–37°C, no radiation\n" +
+             "ROBOT:   flat ECG or mechanical pulse, temp exactly 32°C\n" +
+             "ALIEN:   irregular ECG, temp above 38.5°C, elevated radiation\n\n" +
+             "After Day 5 — advanced synthetics mimic humans almost perfectly.\n" +
+             "Biometrics alone won't be enough. Use dialogue.",
+             1),
+            ("THREE VERDICT BUTTONS",
+             "The three buttons at the BOTTOM LEFT are your verdict:\n\n" +
+             "  RED    →  ROBOT   (synthetic unit detected)\n" +
+             "  BLUE   →  ALIEN   (non-human organism)\n" +
+             "  GREEN  →  HUMAN   (clear to enter)\n\n" +
+             "3 wrong verdicts = shift terminated early.",
+             -1),
+            ("SUBJECT DOCUMENTS",
+             "Click the monitor on the RIGHT (under the stickers)\n" +
+             "to open the subject's identity document.\n\n" +
+             "Check every field: Name · Origin · Access Code · Occupation · Purpose\n\n" +
+             "Compare what they tell you with what's written.\n" +
+             "Discrepancies are your main tool.",
+             7),
+            ("INTERROGATION — SMALL RADIO",
+             "Click the SMALL RADIO on the right side\n" +
+             "to ask the subject questions.\n\n" +
+             "You have 5 questions. Use them wisely.\n\n" +
+             "Synthetics pause before answering.\n" +
+             "Aliens say 'we' instead of 'I'.\n" +
+             "Robots speak in exact, formal language.",
+             9),
+            ("STICKERS & BIG RADIO",
+             "STICKERS (top right corner):\n" +
+             "Today's access codes and threat signs.\n" +
+             "Read them before every subject. Codes change daily.\n\n" +
+             "BIG RADIO (bottom right):\n" +
+             "Colony broadcasts — command alerts, medical warnings.\n" +
+             "Sometimes critical. Never ignore.",
+             8),
+            ("DIALOGUE SCREEN",
+             "The green text at the BOTTOM shows what the subject just said.\n\n" +
+             "Click it anytime to re-read the full conversation log.\n" +
+             "Documents passed to you by subjects appear in the Documents tab.\n\n" +
+             "You can hand documents to Commander Felicia or Commissar Wolf\n" +
+             "— each choice affects the ending.",
+             10),
+            ("YOU'RE READY",
+             "7 days. Each one harder than the last.\n\n" +
+             "Subjects will beg. They'll bribe. They'll lie beautifully.\n" +
+             "Some will hand you information that changes everything.\n\n" +
+             "Trust the equipment. Trust the documents.\n" +
+             "And watch your back — someone is watching yours.\n\n" +
+             "Good luck, Inspector.",
+             -1),
+        };
 
         internal void StartTutorialPhase()
         {
@@ -262,18 +339,16 @@ namespace TheGatekeeper
             _tutorialStep = 0;
             currentCharacterData = null;
             currentCharacter = null;
-            StartTypingEffect(TutorialLines[0]);
-            _tutorialTimer = new Timer { Interval = 3400 };
-            _tutorialTimer.Tick += (s, e) =>
-            {
-                _tutorialStep++;
-                if (_tutorialStep < TutorialLines.Length)
-                    StartTypingEffect(TutorialLines[_tutorialStep]);
-                else
-                    _tutorialTimer.Stop();
-            };
-            _tutorialTimer.Start();
+            ShowTutorialCard(_tutorialStep);
             Redraw();
+        }
+
+        private void ShowTutorialCard(int step)
+        {
+            if (step < 0 || step >= TutorialCards.Length) return;
+            var card = TutorialCards[step];
+            // Используем диалог-строку для отображения подсказки текущей карточки
+            StartTypingEffect(card.Header + "\n" + card.Body);
         }
 
         private void EndTutorialPhase()
@@ -291,25 +366,32 @@ namespace TheGatekeeper
         {
             if (overlayPanel.Visible) { HideOverlay(); return; }
 
-            if (ScaleRect(new Rectangle(50, 548, 160, 82)).Contains(p) ||
-                ScaleRect(new Rectangle(220, 548, 170, 82)).Contains(p))
+            Rectangle skipZone = ScaleRect(new Rectangle(50, 548, 160, 82));
+            Rectangle nextZone = ScaleRect(new Rectangle(220, 548, 170, 82));
+
+            if (skipZone.Contains(p)) { EndTutorialPhase(); return; }
+            if (nextZone.Contains(p))
             {
-                EndTutorialPhase();
+                _tutorialStep++;
+                if (_tutorialStep >= TutorialCards.Length) { EndTutorialPhase(); return; }
+                ShowTutorialCard(_tutorialStep);
+                Redraw();
                 return;
             }
 
-            // Клик по любой зоне — показываем оверлей
-            for (int i = 0; i < interactiveZones.Length; i++)
-                if (ScaleRect(interactiveZones[i]).Contains(p)) { if (i != 9) ShowOverlay(i); return; }
-
-            // Клик в другом месте — следующая строка
-            _tutorialTimer?.Stop();
-            _tutorialStep++;
-            if (_tutorialStep < TutorialLines.Length)
+            // Клик по highlighted зоне — показываем оверлей
+            var (_, _, zoneIdx) = TutorialCards[_tutorialStep];
+            if (zoneIdx >= 0 && ScaleRect(interactiveZones[zoneIdx]).Contains(p))
             {
-                StartTypingEffect(TutorialLines[_tutorialStep]);
-                _tutorialTimer?.Start();
+                ShowOverlay(zoneIdx);
+                return;
             }
+
+            // Клик в любом месте = следующая карточка
+            _tutorialStep++;
+            if (_tutorialStep >= TutorialCards.Length) { EndTutorialPhase(); return; }
+            ShowTutorialCard(_tutorialStep);
+            Redraw();
         }
 
         internal void UpdateTutorialHover(Point p)
@@ -317,8 +399,9 @@ namespace TheGatekeeper
             bool onBtn = ScaleRect(new Rectangle(50, 548, 160, 82)).Contains(p) ||
                          ScaleRect(new Rectangle(220, 548, 170, 82)).Contains(p);
             bool onZone = false;
-            for (int i = 0; i < interactiveZones.Length; i++)
-                if (ScaleRect(interactiveZones[i]).Contains(p)) { onZone = true; break; }
+            var (_, _, zoneIdx) = TutorialCards[Math.Min(_tutorialStep, TutorialCards.Length - 1)];
+            if (zoneIdx >= 0)
+                onZone = ScaleRect(interactiveZones[zoneIdx]).Contains(p);
             Cursor = (onBtn || onZone) ? Cursors.Hand : Cursors.Default;
             Redraw();
         }
@@ -327,33 +410,95 @@ namespace TheGatekeeper
         {
             if (!_tutorialActive) return;
 
-            // Подсветка зон
-            foreach (var zone in interactiveZones)
+            var card = TutorialCards[Math.Min(_tutorialStep, TutorialCards.Length - 1)];
+            int cw = ClientSize.Width, ch = ClientSize.Height;
+
+            // Полупрозрачный оверлей
+            using (var br = new SolidBrush(Color.FromArgb(170, 0, 0, 0)))
+                g.FillRectangle(br, 0, 0, cw, ch);
+
+            // Карточка по центру
+            int cardW = Math.Min(620, cw - 80);
+            int cardH = 380;
+            int cardX = (cw - cardW) / 2;
+            int cardY = (ch - cardH) / 2 - 30;
+
+            using (var br = new SolidBrush(Color.FromArgb(245, 10, 14, 20)))
+                g.FillRectangle(br, cardX, cardY, cardW, cardH);
+            using (var pen = new Pen(Color.FromArgb(200, 51, 130, 200), 2))
+                g.DrawRectangle(pen, cardX, cardY, cardW, cardH);
+            // Верхняя акцентная линия
+            using (var br = new System.Drawing.Drawing2D.LinearGradientBrush(
+                new Rectangle(cardX, cardY, cardW, 4),
+                Color.FromArgb(220, 51, 140, 220), Color.Transparent,
+                System.Drawing.Drawing2D.LinearGradientMode.Horizontal))
+                g.FillRectangle(br, cardX, cardY, cardW, 4);
+
+            // Счётчик шагов
+            using (var font = new Font("Consolas", 8f))
+            using (var br = new SolidBrush(Color.FromArgb(80, 100, 140)))
             {
-                Rectangle r = ScaleRect(zone);
-                using (var br = new SolidBrush(Color.FromArgb(22, 0, 220, 120)))
-                    g.FillRectangle(br, r);
-                using (var pen = new Pen(Color.FromArgb(110, 0, 200, 100), 1.5f))
-                    g.DrawRectangle(pen, r);
+                string counter = $"{_tutorialStep + 1} / {TutorialCards.Length}";
+                g.DrawString(counter, font, br, cardX + cardW - 60, cardY + 10);
             }
 
-            // Прогресс-точки
-            int total = TutorialLines.Length;
-            int step = Math.Min(_tutorialStep, total - 1);
-            int dotX = ClientSize.Width / 2 - (total * 14) / 2;
-            int dotY = ScaleRect(zoneDialogueScreen).Top - 18;
-            for (int i = 0; i < total; i++)
-                using (var br = new SolidBrush(i <= step
-                    ? Color.FromArgb(200, 0, 200, 100)
-                    : Color.FromArgb(50, 0, 150, 80)))
-                    g.FillEllipse(br, dotX + i * 14, dotY, 8, 8);
+            // Заголовок
+            using (var font = new Font("Consolas", 14f, FontStyle.Bold))
+            using (var br = new SolidBrush(Color.FromArgb(100, 180, 255)))
+            {
+                var sf = new StringFormat { Alignment = StringAlignment.Near };
+                g.DrawString(card.Header, font, br, cardX + 24, cardY + 22, sf);
+            }
 
-            // SKIP
+            // Разделитель
+            using (var pen = new Pen(Color.FromArgb(50, 51, 102, 170), 1))
+                g.DrawLine(pen, cardX + 24, cardY + 52, cardX + cardW - 24, cardY + 52);
+
+            // Тело карточки
+            using (var font = new Font("Consolas", 10f))
+            using (var br = new SolidBrush(Color.FromArgb(190, 210, 230)))
+            {
+                var sf = new StringFormat { LineAlignment = StringAlignment.Near };
+                var textRect = new RectangleF(cardX + 24, cardY + 62, cardW - 48, cardH - 90);
+                g.DrawString(card.Body, font, br, textRect, sf);
+            }
+
+            // Подсветка связанной зоны
+            if (card.Zone >= 0 && card.Zone < interactiveZones.Length)
+            {
+                Rectangle r = ScaleRect(interactiveZones[card.Zone]);
+                using (var pen = new Pen(Color.FromArgb(200, 255, 200, 0), 2.5f))
+                    g.DrawRectangle(pen, r);
+                using (var br = new SolidBrush(Color.FromArgb(30, 255, 200, 0)))
+                    g.FillRectangle(br, r);
+                // Стрелка от карточки к зоне
+                Point cardCenter = new Point(cw / 2, cardY + cardH);
+                Point zoneCenter = new Point(r.X + r.Width / 2, r.Y + r.Height / 2);
+                using (var pen = new Pen(Color.FromArgb(120, 255, 200, 0), 1.5f)
+                { DashStyle = System.Drawing.Drawing2D.DashStyle.Dot })
+                    g.DrawLine(pen, cardCenter, zoneCenter);
+            }
+
+            // Кнопка SKIP
             DrawTutBtn(g, new Rectangle(50, 548, 160, 82),
-                "SKIP", Color.FromArgb(80, 40, 40), Color.FromArgb(200, 120, 100));
-            // START SHIFT
+                "SKIP", Color.FromArgb(60, 30, 30), Color.FromArgb(180, 100, 80));
+            // Кнопка NEXT / START
+            bool isLast = _tutorialStep >= TutorialCards.Length - 1;
             DrawTutBtn(g, new Rectangle(220, 548, 170, 82),
-                "START SHIFT", Color.FromArgb(10, 50, 20), Color.FromArgb(0, 220, 100));
+                isLast ? "START SHIFT" : "NEXT  ▶",
+                isLast ? Color.FromArgb(10, 50, 20) : Color.FromArgb(15, 35, 60),
+                isLast ? Color.FromArgb(0, 220, 100) : Color.FromArgb(80, 160, 255));
+
+            // Подсказка "click anywhere"
+            if (!isLast)
+            {
+                using (var font = new Font("Consolas", 8f, FontStyle.Italic))
+                using (var br = new SolidBrush(Color.FromArgb(60, 100, 140)))
+                {
+                    var sf = new StringFormat { Alignment = StringAlignment.Center };
+                    g.DrawString("click anywhere to continue", font, br, cw / 2f, cardY + cardH + 12, sf);
+                }
+            }
         }
 
         private void DrawTutBtn(Graphics g, Rectangle baseRect, string label, Color bg, Color fg)
@@ -372,7 +517,6 @@ namespace TheGatekeeper
             }
         }
 
-        // ════════════════════════════════════════════════════════════════════
         //  ВСПОМОГАТЕЛЬНЫЕ
         // ════════════════════════════════════════════════════════════════════
         private void TriggerButtonGlow(int buttonIndex)

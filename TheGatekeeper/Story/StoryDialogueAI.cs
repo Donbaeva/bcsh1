@@ -29,11 +29,35 @@ namespace TheGatekeeper
         {
             string q = question.ToLower();
 
-            // Универсальный ответ на вопрос об имени для всех сюжетных персонажей
+            // ─── Комиссары и наблюдатели — не терпят допроса ──────────────
+            bool isAuthority = character is CommissarWolf || character is AgentGrey ||
+                               character is MidtermInspector || character is CommanderFelicia;
+            if (isAuthority)
+            {
+                // На имя — всегда отвечают, они не скрываются
+                if (Contains(q, "name", "who are you"))
+                    return $"You know who I am, Inspector. {character.Name}. " +
+                           "It's on your screen, your stickers, and your report.";
+                // На код — дают, но с угрозой
+                if (Contains(q, "code", "access"))
+                    return $"{character.AccessCode ?? "GOV-ALPHA"}. " +
+                           "Don't make me repeat it.";
+                // На всё остальное — отказ
+                var dismissals = new[] {
+                    "You're wasting my time, Inspector.",
+                    "That's not a question you ask me. Do your job.",
+                    "I'm not here to answer your questions. You answer mine.",
+                    "Inspector. I outrank you. Process me and move on.",
+                    "Don't push it. I'm watching your record right now.",
+                };
+                return dismissals[new System.Random().Next(dismissals.Length)];
+            }
+
+            // ─── Универсальный ответ на вопрос об имени для сюжетных персонажей
             if (Contains(q, "name", "who are you", "introduce"))
             {
                 // Проверяем что это сюжетный персонаж
-                if (character is Commander_Felicia || character is SergeantCastro ||
+                if (character is CommissarWolf || character is SergeantCastro ||
                     character is AgentGrey || character is TomArcher ||
                     character is NinaWorth || character is Mirra ||
                     character is ZoyaLann || character is Zzarkh ||
@@ -46,7 +70,7 @@ namespace TheGatekeeper
             }
 
             // ─── КОМИССАР ВОЛК ───────────────────────────────────────────────
-            if (character is Commander_Felicia)
+            if (character is CommissarWolf)
             {
                 if (Contains(q, "code", "access"))
                     return "GOV-ALPHA. You should have it on file, Inspector. " +
@@ -337,6 +361,95 @@ namespace TheGatekeeper
             }
 
             // Не сюжетный персонаж — вернуть null (пусть CharacterAI обрабатывает)
+            // ─── НИНА УОРТ ───────────────────────────────────────────────────
+            if (character is NinaWorth)
+            {
+                if (Contains(q, "name")) return "Nina Worth. Same as always.";
+                if (Contains(q, "code", "access")) return "5521-M. You know it already.";
+                if (Contains(q, "purpose", "reason")) return "Going home. Long shift. " +
+                    "Same as every day this week.";
+                if (Contains(q, "feel")) return "Tired. And nervous. " +
+                    "Is it that obvious?";
+                if (Contains(q, "from", "where", "origin")) return "Medical Bay. " +
+                    "I work there — or did, until the lockdown.";
+                return "You already know enough. Don't make this harder than it needs to be.";
+            }
+
+            // ─── МИРРА ───────────────────────────────────────────────────────
+            if (character is Mirra)
+            {
+                if (Contains(q, "name")) return "Mirra. Just Mirra. " +
+                    "My full designation is on the document.";
+                if (Contains(q, "code", "access")) return "It changes. You have it on file. " +
+                    "Or you should.";
+                if (Contains(q, "feel")) return "We feel... observed. " +
+                    "That is normal for this sector, yes?";
+                if (Contains(q, "family", "kids")) return "My kind does not have family " +
+                    "in the way you mean. We have — others.";
+                if (Contains(q, "purpose", "reason")) return "Same as before. " +
+                    "You know why I'm here.";
+                return "Ask what you need to ask. But carefully.";
+            }
+
+            // ─── ЗОЯ ЛАНН ────────────────────────────────────────────────────
+            if (character is ZoyaLann)
+            {
+                if (Contains(q, "name")) return "Zoya Lann. Colony resident, Sector B.";
+                if (Contains(q, "code", "access")) return "6657-Y. " +
+                    "I had to look it up this morning. They change too often.";
+                if (Contains(q, "feel")) return "Scared, honestly. " +
+                    "Don't tell anyone I said that.";
+                if (Contains(q, "purpose", "reason")) return "Seeing a friend. " +
+                    "Or trying to.";
+                if (Contains(q, "family")) return "My sister is inside. " +
+                    "I haven't seen her in two weeks.";
+                return "Just let me through. Please. I'm not a threat to anyone.";
+            }
+
+            // ─── ЗАРКХ ───────────────────────────────────────────────────────
+            if (character is Zzarkh || character is ZzarkhTwo)
+            {
+                if (Contains(q, "name")) return "Zzarkh. I have been registered " +
+                    "under this name for three cycles.";
+                if (Contains(q, "code", "access")) return "3392-K. " +
+                    "Check your screen. It matches.";
+                if (Contains(q, "feel")) return "Fine. Completely fine. " +
+                    "A little warm, perhaps. The ventilation in here is poor.";
+                if (Contains(q, "purpose", "reason")) return "Research visit. " +
+                    "I have authorization from the science division.";
+                return "I am in a hurry. Please proceed.";
+            }
+
+            // ─── ПРОФЕССОР ХАСАН ─────────────────────────────────────────────
+            if (character is ProfessorHasan)
+            {
+                if (Contains(q, "name")) return "Professor Hasan. Dr. Hasan, technically. " +
+                    "The title matters less than what I'm carrying.";
+                if (Contains(q, "code", "access")) return "SCI-7741-H. " +
+                    "Science division clearance, highest tier.";
+                if (Contains(q, "purpose", "reason")) return "Lab C. I need to reach Lab C. " +
+                    "Every hour I'm delayed, the formula degrades.";
+                if (Contains(q, "feel")) return "Terrified. I'll be honest. " +
+                    "I'm terrified and I need to get inside.";
+                return "Please. The lives of everyone in this colony " +
+                    "may depend on what I'm carrying.";
+            }
+
+            // ─── ОЛИВЕР КЕЙН ─────────────────────────────────────────────────
+            if (character is OliverKane)
+            {
+                if (Contains(q, "name")) return "Oliver Kane. Plumber. " +
+                    "I've been through this gate forty times.";
+                if (Contains(q, "code", "access")) return "5521-M. Same as yesterday. " +
+                    "And the day before.";
+                if (Contains(q, "feel")) return "Not great. But I need to get in. " +
+                    "My daughter is waiting.";
+                if (Contains(q, "family")) return "One daughter. She's inside. " +
+                    "I just need to see her. Please.";
+                return "Look, I know I don't look well. But I'm fine. " +
+                    "I just need to get through.";
+            }
+
             return null;
         }
 

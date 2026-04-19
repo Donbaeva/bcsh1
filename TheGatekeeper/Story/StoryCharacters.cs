@@ -20,9 +20,23 @@ namespace TheGatekeeper.Models
         public static int Caught = 0;
         public static int RobotsPassed = 0;
 
+        // ─── Коррупция ───────────────────────────────────────────────────
+        public static int BribesAccepted = 0;
+        public static int WolfWarnings = 0;
+        public static int WolfInspections = 0;
+        public static int TotalCreditsFromBribes = 0;
+
         public static void Reset()
         {
             Loyalty = Errors = InfectedIn = RebelTrust = Caught = RobotsPassed = 0;
+            BribesAccepted = WolfWarnings = WolfInspections = TotalCreditsFromBribes = 0;
+        }
+
+        public static bool ShouldWolfInspect()
+        {
+            if (BribesAccepted <= 0) return false;
+            int chance = BribesAccepted * 25;
+            return new System.Random().Next(0, 100) < Math.Min(chance, 90);
         }
 
         public static int DetermineEnding()
@@ -94,10 +108,10 @@ namespace TheGatekeeper.Models
     // ─── КОМИССАР ВОЛК ─────────────────────────────────────────────────────
     // День 1: приходит как «плановая проверка». Не нужно его классифицировать.
     // Игрок просто нажимает [ПРОПУСТИТЬ] / [ЗАДЕРЖАТЬ].
-    public class Commander_Felicia : ObserverCharacter, IStoryCharacter
+    public class CommissarWolf : ObserverCharacter, IStoryCharacter
     {
-        public Commander_Felicia(int day) : base(
-            name: "Commander Felicia",
+        public CommissarWolf(int day) : base(
+            name: "Commissar Wolf",
             dialogue: "Inspector. I am conducting a routine check. Your records are exemplary. Keep it up.",
             idNumber: "GOV-0001-W",
             occupation: "Council Commissar",
@@ -120,7 +134,11 @@ namespace TheGatekeeper.Models
             }
         }
 
-        public void OnArrival() { }
+        public void OnArrival()
+        {
+            var f1 = System.Windows.Forms.Application.OpenForms["Form1"] as Form1;
+            f1?.ReceiveDocument(Form1.DocAnonLetter(Day));
+        }
 
         public string GetSecretNote() =>
             "[ДОСЬЕ — КОМИССАР ВОЛК]\n" +
@@ -158,7 +176,11 @@ namespace TheGatekeeper.Models
             }
         }
 
-        public void OnArrival() { }
+        public void OnArrival()
+        {
+            var f1 = System.Windows.Forms.Application.OpenForms["Form1"] as Form1;
+            f1?.ReceiveDocument(Form1.DocRobotCaptureOrder(Day));
+        }
 
         public string GetSecretNote() =>
             "[ФАЙЛ — КАСТРО]\n" +
@@ -205,6 +227,42 @@ namespace TheGatekeeper.Models
             "Доступ: МАКСИМАЛЬНЫЙ.\n\n" +
             "Он всё помнит.\n" +
             "Он уже знает.";
+    }
+
+    // ─── ВНЕПЛАНОВАЯ ПРОВЕРКА ВОЛКА (при высокой коррупции) ────────────
+    public class WolfCorruptionCheck : ObserverCharacter, IStoryCharacter
+    {
+        public WolfCorruptionCheck(int day) : base(
+            name: "Commissar Wolf",
+            dialogue: "Inspector. I received a report of... irregularities at this post. " +
+                      "I'll need to ask you a few questions.",
+            idNumber: "GOV-0001-W",
+            occupation: "Council Commissar",
+            reason: "Corruption Investigation",
+            day: day)
+        {
+            AccessCode = "GOV-ALPHA";
+            SetPhotoFromFile(@"Images\Characters\story\Commander_Felicia.png");
+        }
+
+        public void ApplyEffect(string decision)
+        {
+            // Всегда пропускаем Волка
+            EndingTracker.WolfInspections++;
+        }
+
+        public void OnArrival()
+        {
+            // Сразу начинаем допрос при появлении
+            var f1 = System.Windows.Forms.Application.OpenForms["Form1"] as Form1;
+            f1?.StartWolfCorruptionInterrogation();
+        }
+
+        public string GetSecretNote() =>
+            "[ВНЕПЛАНОВАЯ ПРОВЕРКА]\n" +
+            "Волк получил донос о взятках.\n\n" +
+            "Предупреждения: " + EndingTracker.WolfWarnings + "/2\n" +
+            "На третий раз — конец смены.";
     }
 
     // ─── СОВЕТНИК ПЕК ─────────────────────────────────────────────────────
@@ -272,7 +330,11 @@ namespace TheGatekeeper.Models
             }
         }
 
-        public void OnArrival() { }
+        public void OnArrival()
+        {
+            var f1 = System.Windows.Forms.Application.OpenForms["Form1"] as Form1;
+            f1?.ReceiveDocument(Form1.DocLockdownOrder(Day));
+        }
 
         public string GetSecretNote() =>
             "[ДОСЬЕ — КОМАНДЕР ФЕЛИСИЯ]\n" +
@@ -307,7 +369,11 @@ namespace TheGatekeeper.Models
             }
         }
 
-        public void OnArrival() { }
+        public void OnArrival()
+        {
+            var f1 = System.Windows.Forms.Application.OpenForms["Form1"] as Form1;
+            f1?.ReceiveDocument(Form1.DocFinancialLeak(Day));
+        }
 
         public string GetSecretNote() =>
             "[АУДИТ — ИНСПЕКТОР РАЭЛЬ]\n" +
@@ -445,7 +511,11 @@ namespace TheGatekeeper.Models
             else EndingTracker.Loyalty += 3;
         }
 
-        public void OnArrival() { }
+        public void OnArrival()
+        {
+            var f1 = System.Windows.Forms.Application.OpenForms["Form1"] as Form1;
+            f1?.ReceiveDocument(Form1.DocConspiracyPlan(Day));
+        }
 
         public string GetSecretNote() =>
             "[ПЕРЕХВАТ ГБ]\n" +
@@ -523,7 +593,11 @@ namespace TheGatekeeper.Models
 
         public void ApplyEffect(string decision) { EndingTracker.InfectedIn += 2; }
 
-        public void OnArrival() { }
+        public void OnArrival()
+        {
+            var f1 = System.Windows.Forms.Application.OpenForms["Form1"] as Form1;
+            f1?.ReceiveDocument(Form1.DocInfectionReport(Day));
+        }
 
         public string GetSecretNote() =>
             "[КРИТИЧЕСКОЕ ПРЕДУПРЕЖДЕНИЕ]\n" +
@@ -618,7 +692,11 @@ namespace TheGatekeeper.Models
 
         public void ApplyEffect(string decision) { EndingTracker.RobotsPassed += 1; }
 
-        public void OnArrival() { }
+        public void OnArrival()
+        {
+            var f1 = System.Windows.Forms.Application.OpenForms["Form1"] as Form1;
+            f1?.ReceiveDocument(Form1.DocRobotAnatomy(Day));
+        }
 
         public string GetSecretNote() =>
             "[АНОМАЛИЯ]\n" +
@@ -651,7 +729,7 @@ namespace TheGatekeeper.Models
                     // День 1: первый день. CommissarWolf знакомится, Арчер даёт намёки
                     return new List<IStoryCharacter>
                     {
-                        new Commander_Felicia(day),
+                        new CommissarWolf(day),
                         new TomArcher(day)
                     };
                 case 2:
@@ -672,7 +750,7 @@ namespace TheGatekeeper.Models
                     // День 4: Волк снова проверяет, ServeX1 пробует прорваться
                     return new List<IStoryCharacter>
                     {
-                        new Commander_Felicia(day),
+                        new CommissarWolf(day),
                         new ServCommanderX1(day)
                     };
                 case 5:

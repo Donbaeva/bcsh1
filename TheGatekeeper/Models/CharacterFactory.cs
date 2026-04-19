@@ -365,7 +365,22 @@ namespace TheGatekeeper.Models
             };
 
             var factory = pool[rnd.Next(pool.Count)];
-            return factory();
+            var ch = factory();
+
+            // Случайный шанс — персонаж несёт какой-то документ
+            if (rnd.Next(0, 3) == 0)  // ~33% шанс
+                ch.CarriedDocumentType = GetRandomDocType(rnd);
+
+            return ch;
+        }
+
+        private static string GetRandomDocType(Random rnd)
+        {
+            var types = new[] {
+                "voucher", "flyer", "anon_letter", "robot_anatomy",
+                "alien_profile", "infection_report", "financial_leak"
+            };
+            return types[rnd.Next(types.Length)];
         }
 
         private static Character AssignPhoto(Character c, List<string> photoList)

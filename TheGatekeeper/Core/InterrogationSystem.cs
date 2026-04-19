@@ -309,14 +309,27 @@ namespace TheGatekeeper
         private (List<string>, List<string>) BuildQuestionList()
         {
             var q = new List<string>(); var k = new List<string>();
+
+            // Комиссары и наблюдатели — ограниченный допрос
+            bool auth = currentCharacterData is CommissarWolf ||
+                        currentCharacterData is AgentGrey ||
+                        currentCharacterData is MidtermInspector ||
+                        currentCharacterData is WolfCorruptionCheck ||
+                        currentCharacterData is CommanderFelicia;
+
+            if (auth)
+            {
+                q.Add("What is your access code?"); k.Add("code");
+                q.Add("What is your purpose here?"); k.Add("purpose");
+                q.Add("Where are you coming from?"); k.Add("origin");
+                return (q, k);
+            }
+
+            // Обычные субъекты — 5 вопросов
             q.Add("What is your name?"); k.Add("name");
-            q.Add("Where are you coming from?"); k.Add("origin");
-            q.Add("What is your occupation?"); k.Add("occupation");
-            q.Add("What is your purpose here?"); k.Add("purpose");
-            q.Add("Where are you heading?"); k.Add("destination");
-            q.Add("Do you have family?"); k.Add("family");
             q.Add("What is your access code?"); k.Add("code");
-            q.Add("What is your citizenship?"); k.Add("nationality");
+            q.Add("Where are you coming from?"); k.Add("origin");
+            q.Add("What is your purpose here?"); k.Add("purpose");
             q.Add("How are you feeling today?"); k.Add("feeling");
             if (huntModeActive) { q.Add("[HUNT] Describe your biology."); k.Add("biological"); }
             return (q, k);
@@ -617,7 +630,7 @@ namespace TheGatekeeper
         {
             var r = new Random(); string occ = c.Occupation ?? "general work";
             if (c is Character.Robot && c.Day <= 2) return $"I am assigned to {occ}. It is in my operational parameters.";
-            string[] opts ={$"I work as {occ}.",$"{occ}. It's on the permit.",$"My job is {occ}.",$"I'm a {occ}."};
+            string[] opts = { $"I work as {occ}.", $"{occ}. It's on the permit.", $"My job is {occ}.", $"I'm a {occ}." };
             return opts[r.Next(opts.Length)];
         }
 

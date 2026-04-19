@@ -10,7 +10,7 @@ namespace TheGatekeeper
     //
     //  Показывается ОДИН РАЗ (только День 1) перед LoadCurrentCharacter().
     //  Игрок видит пустой пост. Нажимает на зоны — получает подсказки.
-    //  Потом нажимает "НАЧАТЬ СМЕНУ" — появляется первый персонаж.
+    //  Потом нажимает "START SHIFT" — появляется первый персонаж.
     //
     //  КАК ВЫЗВАТЬ: в Form1.cs в методе InitModeSession() для StoryMode,
     //  перед строкой LoadCurrentCharacter(), добавить:
@@ -27,57 +27,57 @@ namespace TheGatekeeper
         private Button _btnStart;
         private bool _startEnabled = false;
         private int _zonesClicked = 0;
-        private const int ZonesNeeded = 3; // минимум 3 зоны чтобы разблокировать кнопку
+        private const int ZonesNeeded = 3; // minimum 3 zones to proceed кнопку
 
         // Зоны с подсказками (координаты условные для 900×600 формы)
         private readonly (Rectangle Zone, string Title, string Hint)[] _zones =
         {
             (
                 new Rectangle(60, 140, 150, 100),
-                "МОНИТОР — ДОКУМЕНТЫ",
-                "Здесь отображаются документы субъекта.\n" +
-                "Нажмите чтобы проверить имя, профессию\n" +
-                "и код доступа. Сверяйте с тем что говорит субъект."
+                "MONITOR — DOCUMENTS",
+                "Subject documents are displayed here.\n" +
+                "Click to verify name, occupation\n" +
+                "and access code. Compare with what the subject says."
             ),
             (
                 new Rectangle(60, 280, 180, 60),
-                "ЭКГ — МОНИТОР СЕРДЦА",
-                "Кардиограмма субъекта.\n" +
-                "Роботы имеют механические паузы между пиками.\n" +
-                "Пришельцы — нестандартную форму волны.\n" +
-                "Люди — нормальный синусовый ритм."
+                "ECG — CARDIAC MONITOR",
+                "Subject ECG readout.\n" +
+                "Robots have mechanical pauses between peaks.\n" +
+                "Aliens show irregular waveforms.\n" +
+                "Humans have normal sinus rhythm."
             ),
             (
                 new Rectangle(60, 370, 85, 65),
-                "ДОЗИМЕТР",
-                "Измеряет радиационный фон субъекта.\n" +
-                "ВНИМАНИЕ: сегодня прибор не работает\n" +
-                "из-за планового обслуживания.\n" +
-                "Данные ненадёжны — не используй сегодня."
+                "DOSIMETER",
+                "Measures subject radiation signature.\n" +
+                "WARNING: unit offline today\n" +
+                "due to scheduled maintenance.\n" +
+                "Readings unreliable — do not use today."
             ),
             (
                 new Rectangle(600, 470, 220, 80),
-                "РАДИО — ПЕРЕГОВОРЫ",
-                "Входящие сообщения от командования,\n" +
-                "медицины и неизвестных источников.\n" +
-                "Слушай внимательно — там бывают\n" +
-                "важные подсказки о текущей ситуации."
+                "RADIO — TRANSMISSIONS",
+                "Incoming messages from command,\n" +
+                "medical bay, and unknown sources.\n" +
+                "Listen carefully — critical intel\n" +
+                "sometimes comes through here."
             ),
             (
                 new Rectangle(700, 300, 180, 100),
-                "ДОПРОС — МАЛАЯ РАЦИЯ",
-                "Нажми чтобы задать вопрос субъекту.\n" +
-                "Спрашивай про код доступа, семью,\n" +
-                "происхождение, цель визита.\n" +
-                "Ответы хранятся в логе — можно перечитать."
+                "INTERROGATION — SMALL RADIO",
+                "Press to ask the subject a question.\n" +
+                "Ask about access code, family,\n" +
+                "origin, purpose of visit.\n" +
+                "Answers are saved in the log."
             ),
             (
                 new Rectangle(55, 530, 105, 85),
-                "КНОПКИ РЕШЕНИЯ",
-                "🔴 КРАСНАЯ = субъект РОБОТ\n" +
-                "🔵 СИНЯЯ  = субъект ПРИШЕЛЕЦ\n" +
-                "🟢 ЗЕЛЁНАЯ = субъект ЧЕЛОВЕК\n\n" +
-                "Ошибся — потеряешь очки и здоровье."
+                "VERDICT BUTTONS",
+                "🔴 RED   = subject is ROBOT\n" +
+                "🔵 BLUE  = subject is ALIEN\n" +
+                "🟢 GREEN = subject is HUMAN\n\n" +
+                "Wrong verdict = penalty."
             ),
         };
 
@@ -85,7 +85,7 @@ namespace TheGatekeeper
 
         public TutorialForm()
         {
-            this.Text = "ИНСТРУКТАЖ — ДЕНЬ 1";
+            this.Text = "BRIEFING — DAY 1";
             this.Size = new Size(900, 640);
             this.StartPosition = FormStartPosition.CenterParent;
             this.FormBorderStyle = FormBorderStyle.None;
@@ -95,7 +95,7 @@ namespace TheGatekeeper
             // Подсказка снизу
             _lblHint = new Label
             {
-                Text = "← Нажми на любую зону чтобы узнать что она делает",
+                Text = "← Click any highlighted zone to learn what it does",
                 Location = new Point(20, 530),
                 Size = new Size(680, 60),
                 ForeColor = Color.FromArgb(180, 0, 200, 120),
@@ -108,7 +108,7 @@ namespace TheGatekeeper
             // Кнопка "Начать смену" — заблокирована пока не нажато несколько зон
             _btnStart = new Button
             {
-                Text = "НАЧАТЬ СМЕНУ",
+                Text = "START SHIFT",
                 Location = new Point(710, 545),
                 Size = new Size(160, 50),
                 FlatStyle = FlatStyle.Flat,
@@ -213,7 +213,7 @@ namespace TheGatekeeper
             using (var font = new Font("Consolas", 16, FontStyle.Bold))
             using (var brush = new SolidBrush(Color.FromArgb(200, 100, 180, 255)))
             {
-                g.DrawString("═══  ДЕНЬ 1 — НАЧАЛО СМЕНЫ  ═══", font, brush, new Point(20, 18));
+                g.DrawString("═══  DAY 1 — SHIFT START  ═══", font, brush, new Point(20, 18));
             }
 
             // Подзаголовок
@@ -221,8 +221,8 @@ namespace TheGatekeeper
             using (var brush = new SolidBrush(Color.FromArgb(140, 120, 140, 160)))
             {
                 g.DrawString(
-                    "Ты инспектор на орбитальной станции. Твоя задача — определять кто перед тобой: человек, робот или пришелец.\n" +
-                    "Нажми на подсвеченные зоны ниже чтобы узнать что каждая из них делает.",
+                    "You are a gate inspector on an orbital station. Your task — identifyть кто перед тобой: человек, робот или пришелец.\n" +
+                    "Click the highlighted zones below to does.",
                     font, brush, new Rectangle(20, 52, w - 40, 40));
             }
 
@@ -282,7 +282,7 @@ namespace TheGatekeeper
                 using (var font = new Font("Consolas", 9, FontStyle.Italic))
                 using (var brush = new SolidBrush(Color.FromArgb(100, 120, 120, 140)))
                     g.DrawString(
-                        $"Изучи ещё {needed} зон{(needed == 1 ? "у" : "ы")} чтобы разблокировать кнопку",
+                        $"Study {needed} more zone{(needed == 1 ? "" : "s")} to unlock the shift.",
                         font, brush, new Point(710, 535));
             }
         }
@@ -298,40 +298,40 @@ namespace TheGatekeeper
 
             // Монитор с документами (левая верхняя зона)
             DrawSchemaBox(g, 60, 140, 150, 100,
-                "МОНИТОР\nДОКУМЕНТЫ", Color.FromArgb(60, 100, 150, 200));
+                "MONITOR\nDOCS", Color.FromArgb(60, 100, 150, 200));
 
             // ЭКГ (левая средняя)
             DrawSchemaBox(g, 60, 280, 180, 60,
-                "ЭКГ", Color.FromArgb(60, 0, 180, 80));
+                "ECG", Color.FromArgb(60, 0, 180, 80));
 
             // Дозиметр (левая нижняя)
             DrawSchemaBox(g, 60, 370, 85, 65,
-                "ДОЗИМЕТР\n⚠ offline", Color.FromArgb(40, 200, 120, 0));
+                "DOSIMETER\n⚠ offline", Color.FromArgb(40, 200, 120, 0));
 
             // Стикеры (правая верхняя часть)
             DrawSchemaBox(g, 640, 120, 220, 140,
-                "СТИКЕРЫ\nС ЗАМЕТКАМИ", Color.FromArgb(50, 200, 180, 0));
+                "STICKERS\nNOTES", Color.FromArgb(50, 200, 180, 0));
 
             // Радио большое
             DrawSchemaBox(g, 600, 470, 220, 80,
-                "РАДИО", Color.FromArgb(60, 180, 80, 200));
+                "RADIO", Color.FromArgb(60, 180, 80, 200));
 
             // Малая рация (допрос)
             DrawSchemaBox(g, 700, 300, 180, 100,
-                "ДОПРОС\n[МАЛАЯ РАЦИЯ]", Color.FromArgb(60, 80, 160, 220));
+                "INTERROGATE\n[SMALL RADIO]", Color.FromArgb(60, 80, 160, 220));
 
             // Кнопки решения
             DrawSchemaBox(g, 55, 530, 105, 85,
-                "КНОПКИ\nРЕШЕНИЯ", Color.FromArgb(50, 200, 50, 50));
+                "VERDICT\nBUTTONS", Color.FromArgb(50, 200, 50, 50));
 
             // Экран субъекта (центр)
             DrawSchemaBox(g, 270, 130, 320, 350,
-                "СУБЪЕКТ\n(здесь появляется\nтот кого проверяешь)",
+                "SUBJECT\n(appears here\nfor inspection)",
                 Color.FromArgb(25, 100, 100, 150));
 
             // Диалоговый экран
             DrawSchemaBox(g, 320, 470, 260, 55,
-                "ДИАЛОГ — нажми чтобы\nоткрыть лог разговора",
+                "DIALOGUE — click to\nopen conversation log",
                 Color.FromArgb(40, 0, 180, 100));
         }
 
@@ -438,7 +438,7 @@ namespace TheGatekeeper
             }
 
             // Основной текст
-            string mainText = "НА СЕГОДНЯ ВСЁ";
+            string mainText = "SHIFT COMPLETE";
             using (var font = new Font("Consolas", 28, FontStyle.Bold))
             using (var brush = new SolidBrush(Color.FromArgb(220, 180, 220, 255)))
             {
@@ -452,7 +452,7 @@ namespace TheGatekeeper
             }
 
             // Подпись
-            string subText = $"КОНЕЦ СМЕНЫ — ДЕНЬ {day}";
+            string subText = $"SHIFT ENDED — DAY {day}";
             using (var font = new Font("Consolas", 12))
             using (var brush = new SolidBrush(Color.FromArgb(140, 100, 140, 180)))
             {

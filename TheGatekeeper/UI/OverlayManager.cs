@@ -74,7 +74,7 @@ namespace TheGatekeeper
                 (_overlayPanel.Width - _card.Width) / 2,
                 (_overlayPanel.Height - _card.Height) / 2);
         }
-        
+
 
         private void DrawCardBorder(object sender, PaintEventArgs pe)
         {
@@ -934,7 +934,7 @@ namespace TheGatekeeper
             _lblBody.Text = body;
             ContentPanel.Visible = true;
         }
-        
+
     }
     public class RadiationOverlay : BaseOverlayPanel
     {

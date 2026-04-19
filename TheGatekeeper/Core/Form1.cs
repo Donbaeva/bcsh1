@@ -27,11 +27,14 @@ namespace TheGatekeeper
         private Timer shutterTimer;
         private bool isAnimating = false;
         private bool isClosing = false;
+        private bool _dayJustEnded = false; // флаг: день завершён, шторка не нужна
 
         // ─── Зоны клика ─────────────────────────────────────────────────────
-        private readonly Rectangle redZoneBase = new Rectangle(50, 550, 100, 80);
-        private readonly Rectangle blueZoneBase = new Rectangle(120, 550, 100, 80);
-        private readonly Rectangle greenZoneBase = new Rectangle(280, 550, 100, 80);
+        // Центры круглых кнопок в базовом разрешении
+        private readonly Point redCenterBase = new Point(95, 590);
+        private readonly Point blueCenterBase = new Point(200, 590);
+        private readonly Point greenCenterBase = new Point(312, 590);
+        private const int buttonRadiusBase = 40;
         private readonly Rectangle monitorRectBase = new Rectangle(350, 170, 585, 450);
 
         private readonly Rectangle zoneLeftTop = new Rectangle(58, 150, 140, 92);
@@ -46,6 +49,8 @@ namespace TheGatekeeper
         private readonly Rectangle zoneSmallRadio = new Rectangle(950, 490, 63, 130);
         private readonly Rectangle zoneDialogueScreen = new Rectangle(515, 502, 265, 60);
         private readonly Rectangle zoneClock = new Rectangle(480, 572, 170, 50);
+        // Мини-часы справа от диалог-лога — дублируют ClockMenu
+        private readonly Rectangle zoneClock2 = new Rectangle(830, 498, 90, 95);
 
         private int hoveredZone = -1;
 
@@ -143,7 +148,8 @@ namespace TheGatekeeper
             {
                 zoneLeftTop, zoneLeftMiddle, zoneLeftBottom,
                 zoneSticker1, zoneSticker2, zoneSticker3, zoneSticker4,
-                zoneRightScreen, zoneBigRadio, zoneSmallRadio, zoneDialogueScreen
+                zoneRightScreen, zoneBigRadio, zoneSmallRadio, zoneDialogueScreen,
+                zoneClock2
             };
 
             shutterTimer = new Timer { Interval = 15 };
@@ -159,12 +165,13 @@ namespace TheGatekeeper
             pressureTimer = new Timer { Interval = 1000 };
             pressureTimer.Tick += (s, e) =>
             {
-                if (pressureSeconds < 60) pressureSeconds++;
+                if (pressureSeconds < 120) pressureSeconds++;
+                shiftSeconds++; // часы тикают
                 UpdatePressureUI();
-                UpdateMonitorPanelNoise(); // обновляем уровень помех в панелях
-                // В бесконечном режиме давление нарастает быстрее с каждым уровнем
+                UpdateMonitorPanelNoise();
                 if (endlessModeActive && pressureSeconds >= 60)
                     ApplyEndlessPressurePenalty();
+                Redraw(); // обновляем часы каждую секунду
             };
 
             LoadResources();
@@ -333,12 +340,11 @@ namespace TheGatekeeper
         {
             EndingTracker.RegisterDecision(currentCharacterData, decision);
 
-            StartTypingEffect($"Decision: {decision}. Processing...");
-
             if (charactersChecked + 1 >= dailyQuota)
             {
                 await Task.Delay(1500);
-                if (day >= 10)
+                _dayJustEnded = true; // шторка не должна делать index++ после этого
+                if (day >= 7)
                     ShowStoryEnding();
                 else
                     ShowDaySummary();
@@ -417,10 +423,10 @@ namespace TheGatekeeper
         {
             pressureTimer.Stop();
             string msg = victory
-                ? $"ВОЛНА {huntWave} ПРОЙДЕНА!\n\nИтоговый счёт: {score}\nЗдоровье: {health}/3"
-                : $"ЗЛОДЕЙ ПРОРВАЛСЯ\n\nВы дошли до волны {huntWave}.\nИтоговый счёт: {score}";
+                ? $"WAVE {huntWave} CLEARED!\n\nFinal score: {score}\nHealth: {health}/3"
+                : $"VILLAIN ESCAPED\n\nYou reached wave {huntWave}.\nFinal score: {score}";
 
-            MessageBox.Show(msg, victory ? "ПОБЕДА" : "КОНЕЦ СМЕНЫ",
+            MessageBox.Show(msg, victory ? "VICTORY" : "SHIFT ENDED",
                 MessageBoxButtons.OK, MessageBoxIcon.Information);
             this.Close();
         }
@@ -486,12 +492,12 @@ namespace TheGatekeeper
         {
             pressureTimer.Stop();
             MessageBox.Show(
-                $"БЕСКОНЕЧНАЯ СМЕНА ОКОНЧЕНА\n\n" +
-                $"Проверено субъектов: {endlessTotal}\n" +
-                $"Итоговый счёт:       {score}\n" +
-                $"Лучшая серия:        {endlessBestStreak}x\n" +
-                $"Дожили до уровня:    {day}",
-                "КОНЕЦ СМЕНЫ",
+                "ENDLESS SHIFT COMPLETE\n\n" +
+                $"Subjects checked: {endlessTotal}\n" +
+                $"Final score:      {score}\n" +
+                $"Best streak:      {endlessBestStreak}x\n" +
+                $"Reached level:    {day}",
+                "SHIFT ENDED",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Information);
             this.Close();
@@ -537,20 +543,22 @@ namespace TheGatekeeper
         {
             this.Controls.Clear();
 
-            lblScore = MakeLabel("📊 0", Color.Gold, new Point(400, 10), 140);
-            lblHealth = null; // здоровье убрано из HUD
-            lblDay = MakeLabel("📅 DAY 1", Color.Cyan, new Point(660, 10), 130);
-            lblQuota = MakeLabel("📋 0/5", Color.White, new Point(800, 10), 110);
+            // HUD лейблы — скрыты, данные в стикере
+            lblScore = MakeLabel("", Color.Gold, new Point(0, 0), 1);
+            lblScore.Visible = false;
+            lblHealth = null;
+            lblDay = MakeLabel("", Color.Cyan, new Point(0, 0), 1);
+            lblDay.Visible = false;
+            lblQuota = MakeLabel("", Color.White, new Point(0, 0), 1);
+            lblQuota.Visible = false;
 
             lblPressure = new Label
             {
-                Text = "PRESSURE:   0%  [░░░░░░░░░░]",
-                Location = new Point(400, 32),
-                Size = new Size(540, 18),
-                ForeColor = Color.FromArgb(180, 0, 255, 255),
-                BackColor = Color.Transparent,
-                Font = new Font("Consolas", 8, FontStyle.Bold),
-                TextAlign = ContentAlignment.MiddleCenter
+                Text = "",
+                Visible = false,
+                Location = new Point(0, 0),
+                Size = new Size(1, 1),
+                BackColor = Color.Transparent
             };
 
             lblName = new Label
@@ -565,7 +573,7 @@ namespace TheGatekeeper
             {
                 Text = "",
                 ForeColor = Color.FromArgb(0, 255, 120),
-                BackColor = Color.FromArgb(30, 0, 0, 0),
+                BackColor = Color.Transparent,
                 Font = new Font("Consolas", 10, FontStyle.Bold),
                 TextAlign = ContentAlignment.MiddleLeft,
                 Padding = new Padding(10, 4, 10, 4),
@@ -581,7 +589,8 @@ namespace TheGatekeeper
             // Плашка режима — правый верхний угол
             lblMode = new Label
             {
-                Text = ModeTag(),
+                Text = "",
+                Visible = false,
                 Location = new Point(1050, 10),
                 Size = new Size(200, 22),
                 ForeColor = ModeTagColor(),
@@ -595,6 +604,24 @@ namespace TheGatekeeper
                 ScaleControl(c);
             UpdateDialoguePosition(); // позиция диалога — отдельно через ScaleRect
 
+            // Кнопка паузы / меню
+            var btnPause = new Button
+            {
+                Text = "⚙",
+                Location = new Point((int)(1230 * Screen.PrimaryScreen.Bounds.Width / (float)BaseW),
+                                     (int)(8 * Screen.PrimaryScreen.Bounds.Height / (float)BaseH)),
+                Size = new Size((int)(40 * Screen.PrimaryScreen.Bounds.Width / (float)BaseW),
+                                (int)(26 * Screen.PrimaryScreen.Bounds.Height / (float)BaseH)),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.Transparent,
+                ForeColor = Color.FromArgb(140, 160, 180),
+                Font = new Font("Segoe UI", 12),
+                Cursor = Cursors.Hand
+            };
+            btnPause.FlatAppearance.BorderSize = 0;
+            btnPause.Click += (s, e) => ShowPauseMenu();
+            this.Controls.Add(btnPause);
+
             this.Controls.AddRange(new Control[]
                 { lblScore, lblDay, lblQuota, lblPressure, lblName, lblDialogue, lblMode });
         }
@@ -603,9 +630,9 @@ namespace TheGatekeeper
         {
             switch (currentMode)
             {
-                case GameMode.StoryMode: return "▶ ПРОТОКОЛ ВРАТА";
-                case GameMode.HuntMode: return "🎯 ОХОТА";
-                case GameMode.EndlessMode: return "∞ БЕСКОНЕЧНАЯ СМЕНА";
+                case GameMode.StoryMode: return "▶ GATE PROTOCOL";
+                case GameMode.HuntMode: return "🎯 HUNT";
+                case GameMode.EndlessMode: return "∞ ENDLESS SHIFT";
                 default: return "";
             }
         }
@@ -627,10 +654,10 @@ namespace TheGatekeeper
             switch (currentMode)
             {
                 case GameMode.HuntMode:
-                    lblMode.Text = $"🎯 ОХОТА  Волна {huntWave}";
+                    lblMode.Text = $"🎯 HUNT  Wave {huntWave}";
                     break;
                 case GameMode.EndlessMode:
-                    lblMode.Text = $"∞ LVL {day}  серия {endlessStreak}x";
+                    lblMode.Text = $"∞ LVL {day}  streak {endlessStreak}x";
                     break;
                 default:
                     lblMode.Text = ModeTag();
@@ -767,6 +794,13 @@ namespace TheGatekeeper
 
 
 
+            // index 11 = zoneClock2 (мини-часы справа от диалога)
+            if (index == 11)
+            {
+                ShowClockMenu();
+                return;
+            }
+
             // Остальные оверлеи (рация и т.д.)
             var standardNote = NoteManager.GetDynamicNote(index, currentCharacterData);
             overlayTitle.Text = standardNote.Title;
@@ -813,6 +847,7 @@ namespace TheGatekeeper
             // Закрываем панели предыдущего персонажа
             CloseAllMonitorPanels();
             CloseAllStickers();
+            CloseAllFloatingWindows();
 
             // Сброс лога диалога для нового персонажа
             ClearDialogueLog();
@@ -825,6 +860,10 @@ namespace TheGatekeeper
             if (currentCharacterData is IStoryCharacter sc)
                 sc.OnArrival();
 
+            // Случайные персонажи тоже могут нести документы
+            if (!string.IsNullOrEmpty(currentCharacterData.CarriedDocumentType))
+                GiveCarriedDocument(currentCharacterData);
+
         }
         internal void CloseAllStickers()
         {
@@ -833,6 +872,22 @@ namespace TheGatekeeper
                 if (s != null && !s.IsDisposed) s.Close();
             }
             _activeStickers.Clear();
+        }
+
+        internal void CloseAllFloatingWindows()
+        {
+            // Закрываем SUBJECT PROFILE, INTERROGATION, DOCUMENT VAULT и другие плавающие окна
+            var toClose = new System.Collections.Generic.List<Form>();
+            foreach (Form f in Application.OpenForms)
+            {
+                if (f is Form1) continue;
+                if (f.Text == "SUBJECT PROFILE" || f.Text == "INTERROGATION" ||
+                    f.Text == "DOCUMENT VAULT" || f.Text == "SUBJECT STATUS" ||
+                    f.Text == "IDENTITY DOCUMENT")
+                    toClose.Add(f);
+            }
+            foreach (var f in toClose)
+                if (!f.IsDisposed) f.Close();
         }
 
 
@@ -951,6 +1006,17 @@ namespace TheGatekeeper
                 if (shutterHeight >= shutterMaxHeight)
                 {
                     isClosing = false;
+
+                    // Если день только что завершился — StartNextDay уже всё сделал
+                    if (_dayJustEnded)
+                    {
+                        _dayJustEnded = false;
+                        shutterHeight = 0; // сразу открываем шторку
+                        isAnimating = false;
+                        Redraw();
+                        return;
+                    }
+
                     currentCharacterIndex++;
 
                     if (currentCharacterIndex < todayCast.Count)
@@ -984,7 +1050,7 @@ namespace TheGatekeeper
             switch (currentMode)
             {
                 case GameMode.StoryMode:
-                    if (day >= 10) ShowStoryEnding();
+                    if (day >= 7) ShowStoryEnding();
                     else ShiftEndMessages.Show(this, day, () => ShowDaySummary());
                     break;
 
@@ -995,8 +1061,8 @@ namespace TheGatekeeper
                         health--;
                         if (health <= 0) { ShowHuntGameOver(false); return; }
                         MessageBox.Show(
-                            $"Злодей прошёл незамеченным!\n-1 HP. Следующая волна сложнее.",
-                            "ОХОТА", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            "Villain slipped through! -1 HP. Next wave is harder.",
+                            "HUNT MODE", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     }
                     NextHuntWave();
                     break;
@@ -1035,27 +1101,9 @@ namespace TheGatekeeper
         // ═══════════════════════════════════════════════════════════════════
         private void UpdateStatsUI()
         {
-            if (lblScore == null) return;
-            lblScore.Text = $"📊 {score}  💰 {credits}cr";
-            // lblHealth убран
-
-            switch (currentMode)
-            {
-                case GameMode.StoryMode:
-                    lblDay.Text = $"📅 ДЕНЬ {day}/10";
-                    lblQuota.Text = $"📋 {charactersChecked}/{dailyQuota}";
-                    break;
-                case GameMode.HuntMode:
-                    lblDay.Text = $"🎯 Волна {huntWave}";
-                    lblQuota.Text = $"📋 {charactersChecked}/{dailyQuota}";
-                    break;
-                case GameMode.EndlessMode:
-                    lblDay.Text = $"∞ LVL {day}";
-                    lblQuota.Text = $"📋 {endlessTotal}  ×{endlessStreak}";
-                    break;
-            }
-
-
+            // HUD скрыт — просто обновляем внутренние данные
+            // Статы видны в стикере SHIFT STATUS и в меню часов
+            Redraw();
         }
 
         private void ShowDaySummary()
@@ -1079,23 +1127,37 @@ namespace TheGatekeeper
             day++;
             charactersChecked = 0;
             pressureSeconds = 0;
-            InitDailyQuota(); // переменная квота 3–7 по таблице
+            shiftSeconds = 0; // сброс таймера смены
+            _dayJustEnded = false;
+            InitDailyQuota();
 
             todayCast = storyModeActive
                 ? StorySchedule.BuildStoryCast(day, randomTypeCount: Math.Max(1, dailyQuota - 1))
                 : CharacterFactory.GenerateMixedCast(day, 1, 1, 0, Math.Max(1, dailyQuota - 2));
 
             currentCharacterIndex = 0;
-            LoadCurrentCharacter();
+
+            // Открываем шторку через небольшую паузу — персонаж 0 загружен, шторка идёт вниз
+            shutterHeight = shutterMaxHeight; // шторка закрыта
+            isClosing = false;
+            isAnimating = true;
+
+            LoadCurrentCharacter();  // загружаем персонажа под шторкой
             UpdateStatsUI();
             UpdateModeLabel();
             pressureTimer.Start();
+
+            // Каждый новый день — ежедневный документ автоматически
+            ReceiveDocument(Form1.DocGetDailyFree(day));
+
+            // Запускаем анимацию открытия шторки
+            shutterTimer.Start();
             Redraw();
         }
 
         private void UpdatePressureUI()
         {
-            int pct = Math.Min(100, (int)(pressureSeconds * 100f / 60));
+            int pct = Math.Min(100, (int)(pressureSeconds * 100f / 120));
             string bar = new string('█', pct / 10) + new string('░', 10 - pct / 10);
             Color c = pct < 50 ? Color.FromArgb(180, 0, 255, 255)
                     : pct < 75 ? Color.FromArgb(210, 255, 190, 0)
@@ -1128,8 +1190,8 @@ namespace TheGatekeeper
         {
             pressureTimer.Stop();
             MessageBox.Show(
-                "Слишком много ошибок.\nКолония отстранила вас от должности.\n\nИГРА ОКОНЧЕНА",
-                "ТРИБУНАЛ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                "Too many errors.\nThe colony has relieved you of your post.\n\nSHIFT TERMINATED",
+                "TRIBUNAL", MessageBoxButtons.OK, MessageBoxIcon.Error);
             this.Close();
         }
 
@@ -1172,8 +1234,7 @@ namespace TheGatekeeper
             DrawObserverPassButton(g);
             DrawTutorialUI(g);
 
-            if (currentBtnImage != null)
-                g.DrawImage(currentBtnImage, 0, 0, ClientSize.Width, ClientSize.Height);
+            // Кнопки теперь рисуются программно в DrawInteractiveGlow
 
             if (flashAlpha > 0 && flashColor != Color.Transparent)
             {
@@ -1194,16 +1255,89 @@ namespace TheGatekeeper
 
         private void DrawInteractiveGlow(Graphics g)
         {
-            if (hoveredZone < 0) return;
-            Rectangle r = ScaleRect(interactiveZones[hoveredZone]);
-            using (GraphicsPath path = RoundedRect(r, 10))
+            // Подсветка интерактивных зон
+            if (hoveredZone >= 0)
             {
-                for (int i = 8; i >= 1; i--)
-                    using (Pen p = new Pen(Color.FromArgb(18 * i, 0, 255, 255), i))
-                        g.DrawPath(p, path);
-                using (SolidBrush br = new SolidBrush(Color.FromArgb(18, 0, 255, 255)))
-                    g.FillPath(br, path);
+                Rectangle r = ScaleRect(interactiveZones[hoveredZone]);
+                using (GraphicsPath path = RoundedRect(r, 10))
+                {
+                    for (int i = 8; i >= 1; i--)
+                        using (Pen p = new Pen(Color.FromArgb(18 * i, 0, 255, 255), i))
+                            g.DrawPath(p, path);
+                    using (SolidBrush br = new SolidBrush(Color.FromArgb(18, 0, 255, 255)))
+                        g.FillPath(br, path);
+                }
             }
+
+            // Круглые кнопки ROBOT / ALIEN / HUMAN
+            if (currentCharacterData != null && !currentCharacterData.IsObserver)
+            {
+                float sx = (float)ClientSize.Width / BaseW;
+                float sy = (float)ClientSize.Height / BaseH;
+                int scaledR = (int)(buttonRadiusBase * Math.Min(sx, sy));
+
+                Point redC = new Point((int)(redCenterBase.X * sx), (int)(redCenterBase.Y * sy));
+                Point blueC = new Point((int)(blueCenterBase.X * sx), (int)(blueCenterBase.Y * sy));
+                Point greenC = new Point((int)(greenCenterBase.X * sx), (int)(greenCenterBase.Y * sy));
+
+                Point[] centers = { redC, blueC, greenC };
+                Color[] btnColors = {
+                    Color.FromArgb(255, 60,  60),
+                    Color.FromArgb(60,  120, 255),
+                    Color.FromArgb(60,  220, 60),
+                };
+                string[] labels = { "ROBOT", "ALIEN", "HUMAN" };
+
+                Point mouse = PointToClient(Cursor.Position);
+                int hoverIdx = -1;
+                for (int i = 0; i < 3; i++)
+                {
+                    int dx = mouse.X - centers[i].X, dy = mouse.Y - centers[i].Y;
+                    if (dx * dx + dy * dy <= scaledR * scaledR) { hoverIdx = i; break; }
+                }
+
+                for (int i = 0; i < 3; i++)
+                {
+                    bool hov = (i == hoverIdx);
+                    Rectangle circ = new Rectangle(
+                        centers[i].X - scaledR, centers[i].Y - scaledR,
+                        scaledR * 2, scaledR * 2);
+
+                    using (GraphicsPath path = new GraphicsPath())
+                    {
+                        path.AddEllipse(circ);
+
+                        // Свечение только при наведении
+                        if (hov)
+                        {
+                            for (int j = 10; j >= 1; j--)
+                                using (Pen p = new Pen(Color.FromArgb(18 * j, btnColors[i]), j + 1))
+                                    g.DrawPath(p, path);
+                            using (var br = new SolidBrush(Color.FromArgb(40, btnColors[i])))
+                                g.FillPath(br, path);
+                        }
+                    }
+
+                    // Подпись внутри круга
+                    using (var font = new Font("Consolas", hov ? 8.5f : 7.5f, FontStyle.Bold))
+                    using (var brush = new SolidBrush(Color.FromArgb(hov ? 240 : 180, Color.White)))
+                    {
+                        var sf = new StringFormat
+                        {
+                            Alignment = StringAlignment.Center,
+                            LineAlignment = StringAlignment.Center
+                        };
+                        g.DrawString(labels[i], font, brush, centers[i], sf);
+                    }
+                }
+            }
+        }
+
+        private bool IsPointInCircle(Point click, Point center, int radius)
+        {
+            int dx = click.X - center.X;
+            int dy = click.Y - center.Y;
+            return dx * dx + dy * dy <= radius * radius;
         }
 
         private GraphicsPath RoundedRect(Rectangle bounds, int radius)
@@ -1222,8 +1356,21 @@ namespace TheGatekeeper
         {
             Rectangle zone = ScaleRect(zoneClock);
             int m = shiftSeconds / 60, s = shiftSeconds % 60;
+
+            // Подсветка при наведении
+            bool hovered = zone.Contains(PointToClient(Cursor.Position));
+            if (hovered)
+            {
+                using (var br = new SolidBrush(Color.FromArgb(30, 0, 200, 255)))
+                    g.FillRectangle(br, zone);
+                using (var pen = new Pen(Color.FromArgb(80, 0, 200, 255), 1))
+                    g.DrawRectangle(pen, zone);
+            }
+
             using (var font = new Font("Consolas", zone.Height * 0.45f, FontStyle.Bold, GraphicsUnit.Pixel))
-            using (var br = new SolidBrush(Color.FromArgb(255, 0, 170, 255)))
+            using (var br = new SolidBrush(hovered
+                ? Color.FromArgb(255, 80, 220, 255)
+                : Color.FromArgb(255, 0, 170, 255)))
             {
                 var sf = new StringFormat
                 {
@@ -1231,6 +1378,81 @@ namespace TheGatekeeper
                     LineAlignment = StringAlignment.Center
                 };
                 g.DrawString($"{m:D2}:{s:D2}", font, br, zone, sf);
+            }
+
+            // Рисуем мини-часы справа от диалога
+            DrawMiniClock(g);
+        }
+
+        private void DrawMiniClock(Graphics g)
+        {
+            Rectangle z = ScaleRect(zoneClock2);
+            bool hov = z.Contains(PointToClient(Cursor.Position));
+            int mm = shiftSeconds / 60;
+            int ss = shiftSeconds % 60;
+
+            // Glow как у других зон (cyan)
+            using (GraphicsPath path = RoundedRect(z, 8))
+            {
+                for (int i = 8; i >= 1; i--)
+                    using (Pen p = new Pen(Color.FromArgb((hov ? 22 : 10) * i, 0, 220, 255), i))
+                        g.DrawPath(p, path);
+                using (var br = new SolidBrush(Color.FromArgb(hov ? 22 : 8, 0, 220, 255)))
+                    g.FillPath(br, path);
+            }
+
+            // Метка "SHIFT"
+            using (var font = new Font("Consolas", 7f, FontStyle.Bold))
+            using (var br = new SolidBrush(Color.FromArgb(hov ? 160 : 80, 0, 180, 220)))
+            {
+                var sf = new StringFormat { Alignment = StringAlignment.Center };
+                g.DrawString("SHIFT", font, br, z.X + z.Width / 2f, z.Y + 5, sf);
+            }
+
+            // Время MM:SS
+            using (var font = new Font("Consolas", 12f, FontStyle.Bold))
+            using (var br = new SolidBrush(Color.FromArgb(hov ? 255 : 180, 0, 200, 255)))
+            {
+                var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
+                g.DrawString($"{mm:D2}:{ss:D2}", font, br,
+                    new RectangleF(z.X, z.Y + 18, z.Width, 28), sf);
+            }
+
+            // Мини-прогресс проверенных
+            if (dailyQuota > 0)
+            {
+                int barW = z.Width - 10;
+                int barX = z.X + 5;
+                int barY = z.Y + z.Height - 16;
+                float pct = Math.Min(1f, (float)charactersChecked / dailyQuota);
+
+                // Фон бара
+                using (var br = new SolidBrush(Color.FromArgb(30, 0, 180, 100)))
+                    g.FillRectangle(br, barX, barY, barW, 6);
+                // Заполнение
+                using (var br = new SolidBrush(Color.FromArgb(hov ? 200 : 140, 0, 210, 100)))
+                    g.FillRectangle(br, barX, barY, (int)(barW * pct), 6);
+
+                // Текст checked/total
+                using (var font = new Font("Consolas", 6.5f))
+                using (var br = new SolidBrush(Color.FromArgb(hov ? 140 : 80, 0, 180, 100)))
+                {
+                    var sf = new StringFormat { Alignment = StringAlignment.Center };
+                    g.DrawString($"{charactersChecked}/{dailyQuota}", font, br,
+                        z.X + z.Width / 2f, barY - 10, sf);
+                }
+            }
+
+            // Подсказка при hover
+            if (hov)
+            {
+                using (var font = new Font("Consolas", 6.5f, FontStyle.Italic))
+                using (var br = new SolidBrush(Color.FromArgb(90, 0, 180, 220)))
+                {
+                    var sf = new StringFormat { Alignment = StringAlignment.Center };
+                    g.DrawString("click for stats", font, br,
+                        z.X + z.Width / 2f, z.Y + z.Height + 3, sf);
+                }
             }
         }
 
@@ -1313,5 +1535,264 @@ namespace TheGatekeeper
 
         protected override void OnPaint(PaintEventArgs e) => Redraw();
         protected override void OnPaintBackground(PaintEventArgs e) { }
+        // ═══════════════════════════════════════════════════════════════
+        //  МЕНЮ ПАУЗЫ — сохранение, настройки, выход
+        // ═══════════════════════════════════════════════════════════════
+        private void ShowClockMenu()
+        {
+            pressureTimer.Stop();
+            typingTimer.Stop();
+
+            // Высота зависит от кнопок: шапка(140) + 4 кнопки(44*4=176) + отступ(20) = ~336
+            var menu = new Form
+            {
+                Size = new Size(310, 360),
+                BackColor = Color.FromArgb(8, 12, 18),
+                StartPosition = FormStartPosition.Manual,
+                FormBorderStyle = FormBorderStyle.None,
+                TopMost = true,
+                ShowInTaskbar = false
+            };
+
+            // Позиция — слева от zoneClock2, вверх
+            var c2 = ScaleRect(zoneClock2);
+            menu.Location = new Point(
+                Math.Max(0, c2.Left - 320),
+                Math.Max(0, c2.Top - 80));
+
+            menu.Paint += (s, pe) =>
+            {
+                var g2 = pe.Graphics;
+
+                // Рамка
+                using (var pen = new Pen(Color.FromArgb(80, 0, 180, 255), 1))
+                    g2.DrawRectangle(pen, 0, 0, menu.Width - 1, menu.Height - 1);
+                // Верхняя линия
+                using (var br = new System.Drawing.Drawing2D.LinearGradientBrush(
+                    new Rectangle(0, 0, menu.Width, 3),
+                    Color.FromArgb(160, 0, 180, 255), Color.Transparent,
+                    System.Drawing.Drawing2D.LinearGradientMode.Horizontal))
+                    g2.FillRectangle(br, 0, 0, menu.Width, 3);
+
+                // ── Время смены крупно ──
+                int mm = shiftSeconds / 60, ss2 = shiftSeconds % 60;
+                using (var font = new Font("Consolas", 20, FontStyle.Bold))
+                using (var brT = new SolidBrush(Color.FromArgb(0, 190, 255)))
+                {
+                    var sf = new StringFormat { Alignment = StringAlignment.Center };
+                    g2.DrawString($"{mm:D2}:{ss2:D2}", font, brT, menu.Width / 2f, 10, sf);
+                }
+                using (var font = new Font("Consolas", 7))
+                using (var brS = new SolidBrush(Color.FromArgb(50, 90, 130)))
+                {
+                    var sf = new StringFormat { Alignment = StringAlignment.Center };
+                    g2.DrawString("SHIFT TIME", font, brS, menu.Width / 2f, 38, sf);
+                }
+
+                // ── Разделитель ──
+                using (var pen = new Pen(Color.FromArgb(30, 51, 102, 170), 1))
+                    g2.DrawLine(pen, 12, 52, menu.Width - 12, 52);
+
+                // ── Статы ──
+                void StatRow(string label, string value, float y, Color valColor)
+                {
+                    using (var fL = new Font("Consolas", 8))
+                    using (var brL = new SolidBrush(Color.FromArgb(70, 100, 140)))
+                        g2.DrawString(label, fL, brL, 14, y);
+                    using (var fV = new Font("Consolas", 9, FontStyle.Bold))
+                    using (var brV = new SolidBrush(valColor))
+                    {
+                        var sf = new StringFormat { Alignment = StringAlignment.Far };
+                        g2.DrawString(value, fV, brV, new RectangleF(14, y - 1, menu.Width - 28, 16), sf);
+                    }
+                }
+
+                float ry = 58;
+                StatRow("DAY", $"{day} / 7",
+                    ry, Color.FromArgb(100, 180, 255)); ry += 18;
+                StatRow("CHECKED", $"{charactersChecked} / {dailyQuota}",
+                    ry, Color.FromArgb(0, 210, 100)); ry += 18;
+                StatRow("REMAINING", $"{Math.Max(0, dailyQuota - charactersChecked)}",
+                    ry, Color.FromArgb(220, 180, 60)); ry += 18;
+                StatRow("SCORE", $"{score}",
+                    ry, Color.FromArgb(220, 200, 80)); ry += 18;
+                StatRow("CREDITS", $"{credits} cr",
+                    ry, Color.FromArgb(180, 220, 120)); ry += 18;
+
+                // Давление
+                int pct = Math.Min(100, (int)(pressureSeconds * 100f / 120));
+                string bar = new string('█', pct / 10) + new string('░', 10 - pct / 10);
+                Color pCol = pct < 50 ? Color.FromArgb(0, 200, 150)
+                           : pct < 75 ? Color.FromArgb(220, 180, 0)
+                           : Color.FromArgb(220, 60, 60);
+                StatRow("PRESSURE", $"{pct}%", ry, pCol); ry += 18;
+
+                // Разделитель перед кнопками
+                using (var pen = new Pen(Color.FromArgb(25, 51, 102, 170), 1))
+                    g2.DrawLine(pen, 12, (int)ry + 2, menu.Width - 12, (int)ry + 2);
+            };
+
+            int by = 178;
+            void Btn(string text, Color fg, Color bg, Action act)
+            {
+                var btn = new Button
+                {
+                    Text = text,
+                    Location = new Point(12, by),
+                    Size = new Size(menu.Width - 24, 36),
+                    FlatStyle = FlatStyle.Flat,
+                    BackColor = bg,
+                    ForeColor = fg,
+                    Font = new Font("Consolas", 8, FontStyle.Bold),
+                    Cursor = Cursors.Hand,
+                    TextAlign = ContentAlignment.MiddleLeft,
+                    Padding = new Padding(8, 0, 0, 0)
+                };
+                btn.FlatAppearance.BorderColor = Color.FromArgb(
+                    fg.R / 6, fg.G / 6, fg.B / 6 + 15);
+                btn.Click += (s, e) => { menu.Close(); act(); };
+                menu.Controls.Add(btn);
+                by += 42;
+            }
+
+            Btn("▶  CONTINUE SHIFT",
+                Color.FromArgb(0, 210, 100), Color.FromArgb(8, 38, 16),
+                () => { pressureTimer.Start(); typingTimer.Start(); });
+
+            Btn("⏹  END SHIFT EARLY",
+                Color.FromArgb(220, 160, 40), Color.FromArgb(28, 22, 8),
+                () => { ShowDaySummary(); });
+
+            Btn("💾  SAVE PROGRESS",
+                Color.FromArgb(100, 160, 240), Color.FromArgb(8, 18, 38),
+                () => { SaveProgress(); pressureTimer.Start(); });
+
+            Btn("✕  EXIT TO MENU",
+                Color.FromArgb(200, 80, 80), Color.FromArgb(28, 8, 8),
+                () => { this.Close(); });
+
+            menu.KeyDown += (s, e) =>
+            {
+                if (e.KeyCode == Keys.Escape) { menu.Close(); pressureTimer.Start(); }
+            };
+            menu.LostFocus += (s, e) => { menu.Close(); pressureTimer.Start(); };
+            menu.ShowDialog(this);
+        }
+
+        private void ShowPauseMenu()
+        {
+            pressureTimer.Stop();
+            typingTimer.Stop();
+
+            var menu = new Form
+            {
+                Size = new Size(340, 280),
+                BackColor = Color.FromArgb(10, 14, 20),
+                StartPosition = FormStartPosition.CenterParent,
+                FormBorderStyle = FormBorderStyle.None,
+                TopMost = true,
+                ShowInTaskbar = false
+            };
+            menu.Paint += (s, pe) =>
+            {
+                var g = pe.Graphics;
+                using (var pen = new Pen(Color.FromArgb(80, 51, 102, 170), 1))
+                    g.DrawRectangle(pen, 0, 0, menu.Width - 1, menu.Height - 1);
+                using (var br = new System.Drawing.Drawing2D.LinearGradientBrush(
+                    new Rectangle(0, 0, menu.Width, 3),
+                    Color.FromArgb(160, 51, 130, 200), Color.Transparent,
+                    System.Drawing.Drawing2D.LinearGradientMode.Horizontal))
+                    g.FillRectangle(br, 0, 0, menu.Width, 3);
+            };
+
+            menu.Controls.Add(new Label
+            {
+                Text = "  ⚙  MENU",
+                Location = new Point(16, 14),
+                Size = new Size(308, 22),
+                ForeColor = Color.FromArgb(100, 160, 220),
+                Font = new Font("Consolas", 11, FontStyle.Bold),
+                BackColor = Color.Transparent
+            });
+            menu.Controls.Add(new Label
+            {
+                Location = new Point(16, 38),
+                Size = new Size(308, 1),
+                BackColor = Color.FromArgb(50, 51, 102, 170)
+            });
+
+            int by = 50;
+            void AddMenuBtn(string text, Color fg, Color bg, Action onClick)
+            {
+                var btn = new Button
+                {
+                    Text = text,
+                    Location = new Point(16, by),
+                    Size = new Size(308, 42),
+                    FlatStyle = FlatStyle.Flat,
+                    BackColor = bg,
+                    ForeColor = fg,
+                    Font = new Font("Consolas", 9, FontStyle.Bold),
+                    Cursor = Cursors.Hand,
+                    TextAlign = ContentAlignment.MiddleLeft,
+                    Padding = new Padding(12, 0, 0, 0)
+                };
+                btn.FlatAppearance.BorderColor = Color.FromArgb(fg.R / 4, fg.G / 4, fg.B / 4 + 20);
+                btn.Click += (s, e) => { menu.Close(); onClick(); };
+                menu.Controls.Add(btn);
+                by += 48;
+            }
+
+            AddMenuBtn("▶  CONTINUE SHIFT",
+                Color.FromArgb(0, 200, 100), Color.FromArgb(10, 40, 18),
+                () => { pressureTimer.Start(); typingTimer.Start(); });
+
+            AddMenuBtn("💾  SAVE PROGRESS",
+                Color.FromArgb(100, 160, 240), Color.FromArgb(10, 20, 40),
+                () => { SaveProgress(); pressureTimer.Start(); });
+
+            AddMenuBtn("🔊  SOUND  (placeholder)",
+                Color.FromArgb(160, 160, 180), Color.FromArgb(14, 14, 24),
+                () => { pressureTimer.Start(); });
+
+            AddMenuBtn("✕  EXIT TO MENU",
+                Color.FromArgb(200, 80, 80), Color.FromArgb(28, 10, 10),
+                () => { this.Close(); });
+
+            menu.KeyDown += (s, e) =>
+            {
+                if (e.KeyCode == Keys.Escape) { menu.Close(); pressureTimer.Start(); }
+            };
+            menu.ShowDialog(this);
+        }
+
+        // ─── Сохранение прогресса ────────────────────────────────────────
+        private void SaveProgress()
+        {
+            try
+            {
+                var sb = new System.Text.StringBuilder();
+                sb.AppendLine($"day={day}");
+                sb.AppendLine($"score={score}");
+                sb.AppendLine($"credits={credits}");
+                sb.AppendLine($"health={health}");
+                sb.AppendLine($"loyalty={EndingTracker.Loyalty}");
+                sb.AppendLine($"rebelTrust={EndingTracker.RebelTrust}");
+                sb.AppendLine($"bribesAccepted={EndingTracker.BribesAccepted}");
+                sb.AppendLine($"wolfWarnings={EndingTracker.WolfWarnings}");
+                sb.AppendLine($"savedAt={DateTime.Now:yyyy-MM-dd HH:mm}");
+
+                string path = System.IO.Path.Combine(
+                    Application.StartupPath, "save.dat");
+                System.IO.File.WriteAllText(path, sb.ToString());
+
+                StartTypingEffect("Progress saved. Come back when you're ready, Inspector.");
+            }
+            catch (Exception ex)
+            {
+                StartTypingEffect($"Save failed: {ex.Message}");
+            }
+        }
+
     }
 }

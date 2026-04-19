@@ -93,6 +93,7 @@
     </Compile>
     <!-- ═══ UTILS — утилиты ═══ -->
     <Compile Include="Utils\CharacterAI.cs" />
+    <Compile Include="Utils\ToolSystem.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Core\Form1.resx">
@@ -107,13 +108,10 @@
     <Content Include="Images\Background\back_panel.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Background\buttons_blue.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
     <Content Include="Images\Background\buttons_default.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Images\Background\buttons_green.png">
+    <Content Include="Images\Background\buttons_blue.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Images\Background\buttons_red.png">
@@ -126,6 +124,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Images\Background\image_4.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\Background\buttons_green.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Images\Characters\story\AgentGrey.png">

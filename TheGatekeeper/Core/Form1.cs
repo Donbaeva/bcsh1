@@ -44,7 +44,7 @@ namespace TheGatekeeper
         private readonly Rectangle zoneRightScreen = new Rectangle(1047, 330, 185, 90);
         private readonly Rectangle zoneBigRadio = new Rectangle(1070, 555, 210, 125);
         private readonly Rectangle zoneSmallRadio = new Rectangle(950, 490, 63, 130);
-        private readonly Rectangle zoneDialogueScreen = new Rectangle(510, 498, 275, 74);
+        private readonly Rectangle zoneDialogueScreen = new Rectangle(515, 502, 265, 60);
         private readonly Rectangle zoneClock = new Rectangle(480, 572, 170, 50);
 
         private int hoveredZone = -1;
@@ -59,7 +59,8 @@ namespace TheGatekeeper
         private Timer flashTimer;
 
         // ─── UI-лейблы ───────────────────────────────────────────────────────
-        private Label lblScore, lblHealth, lblDay, lblQuota;
+        private Label lblScore, lblDay, lblQuota;
+        private Label lblHealth = null; // убран из HUD, оставлен для совместимости
         private Label lblPressure;
         private Label lblName;
         private Label lblDialogue;
@@ -73,6 +74,7 @@ namespace TheGatekeeper
 
         // ─── Состояние игры ──────────────────────────────────────────────────
         private int score = 0, health = 3, day = 1;
+        internal int credits = 0;   // кредиты — получаются от взяток, тратятся на подкупы
         private int charactersChecked = 0, dailyQuota = 5;
         private int pressureSeconds = 0;
         private Timer pressureTimer;
@@ -306,6 +308,13 @@ namespace TheGatekeeper
             bool handled = await HandleSpecialCharacter(currentCharacterData, decision);
             if (handled) return;
 
+            // При отказе (ROBOT/ALIEN) — случайный шанс предложить взятку
+            if (decision != "HUMAN" && storyModeActive)
+            {
+                bool offeredBribe = await TryOfferBribeOnDetect(currentCharacterData, decision);
+                if (offeredBribe) return;
+            }
+
             switch (currentMode)
             {
                 case GameMode.StoryMode: await ProcessStoryDecision(decision); break;
@@ -529,7 +538,7 @@ namespace TheGatekeeper
             this.Controls.Clear();
 
             lblScore = MakeLabel("📊 0", Color.Gold, new Point(400, 10), 140);
-            lblHealth = MakeLabel("❤️ 3", Color.Tomato, new Point(550, 10), 100);
+            lblHealth = null; // здоровье убрано из HUD
             lblDay = MakeLabel("📅 DAY 1", Color.Cyan, new Point(660, 10), 130);
             lblQuota = MakeLabel("📋 0/5", Color.White, new Point(800, 10), 110);
 
@@ -546,24 +555,24 @@ namespace TheGatekeeper
 
             lblName = new Label
             {
-                Text = "OBJECT APPROACHING...",
-                Location = new Point(400, 464),
-                Size = new Size(565, 26),
-                ForeColor = Color.FromArgb(255, 230, 230, 230),
-                BackColor = Color.FromArgb(100, 0, 0, 0),
-                Font = new Font("Consolas", 13, FontStyle.Bold),
-                TextAlign = ContentAlignment.MiddleCenter
+                Text = "",
+                Location = new Point(0, 0),
+                Size = new Size(1, 1),
+                Visible = false   // имя скрыто — показывается только в документах
             };
 
             lblDialogue = new Label
             {
                 Text = "",
                 ForeColor = Color.FromArgb(0, 255, 120),
-                BackColor = Color.Transparent,
+                BackColor = Color.FromArgb(30, 0, 0, 0),
                 Font = new Font("Consolas", 10, FontStyle.Bold),
                 TextAlign = ContentAlignment.MiddleLeft,
-                Padding = new Padding(10, 4, 10, 4)
+                Padding = new Padding(10, 4, 10, 4),
+                Cursor = Cursors.Hand  // намекает что кликабельно
             };
+            // Клик по диалогу — открываем лог
+            lblDialogue.Click += (s, e) => ShowDialogueLog();
             // Позиция lblDialogue задаётся через zoneDialogueScreen — НЕ нужен ScaleControl
             // Обновляется при Resize через обработчик ниже
             lblDialogue.Location = new Point(0, 0); // временно, обновится в UpdateDialoguePosition()
@@ -582,12 +591,12 @@ namespace TheGatekeeper
             };
 
             foreach (var c in new Control[]
-                { lblScore, lblHealth, lblDay, lblQuota, lblPressure, lblName, lblMode })
+                { lblScore, lblDay, lblQuota, lblPressure, lblName, lblMode })
                 ScaleControl(c);
             UpdateDialoguePosition(); // позиция диалога — отдельно через ScaleRect
 
             this.Controls.AddRange(new Control[]
-                { lblScore, lblHealth, lblDay, lblQuota, lblPressure, lblName, lblDialogue, lblMode });
+                { lblScore, lblDay, lblQuota, lblPressure, lblName, lblDialogue, lblMode });
         }
 
         private string ModeTag()
@@ -756,6 +765,8 @@ namespace TheGatekeeper
                 return;
             }
 
+
+
             // Остальные оверлеи (рация и т.д.)
             var standardNote = NoteManager.GetDynamicNote(index, currentCharacterData);
             overlayTitle.Text = standardNote.Title;
@@ -808,12 +819,11 @@ namespace TheGatekeeper
             // Записываем начальное приветствие в лог
             AddToDialogueLog(currentCharacterData.Name, currentCharacterData.Dialogue);
 
-            if (huntModeActive)
-                lblName.Text = $"[{huntCorrect}/{huntWaveSize - 1} cleared]";
-            else
-                lblName.Text = "SUBJECT APPROACHING";   // имя скрыто — узнай из допроса
-
             StartTypingEffect(currentCharacterData.Dialogue);
+
+            // Вызываем OnArrival для сюжетных персонажей (передача документов и т.д.)
+            if (currentCharacterData is IStoryCharacter sc)
+                sc.OnArrival();
 
         }
         internal void CloseAllStickers()
@@ -1026,8 +1036,8 @@ namespace TheGatekeeper
         private void UpdateStatsUI()
         {
             if (lblScore == null) return;
-            lblScore.Text = $"📊 {score}";
-            lblHealth.Text = $"❤️ {health}";
+            lblScore.Text = $"📊 {score}  💰 {credits}cr";
+            // lblHealth убран
 
             switch (currentMode)
             {
@@ -1045,7 +1055,7 @@ namespace TheGatekeeper
                     break;
             }
 
-            lblHealth.ForeColor = health <= 1 ? Color.Red : Color.Tomato;
+
         }
 
         private void ShowDaySummary()

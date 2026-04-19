@@ -525,6 +525,8 @@ namespace TheGatekeeper.Models
                 "Morning. Is the line usually this long?",
                 "Hello. Hope I didn't forget anything today.",
                 "Good morning. I'm running a bit late, if that's okay.",
+                "Please, officer. I have a schedule to maintain. Can we proceed?",
+                "I really need to get through. Everything is correct. Please.",
             };
             return robotMid[rnd.Next(robotMid.Length)];
         }
@@ -577,6 +579,17 @@ namespace TheGatekeeper.Models
                 "Hi. Sorry, is there a faster queue?",
                 "Morning. Coffee hasn't kicked in yet, bear with me.",
                 "Hey. Same checkpoint as yesterday, right? I'm getting used to this.",
+                // Умоляющие/торопящие
+                "Please, officer. I'm already twenty minutes late. Just let me through.",
+                "I beg you, make it quick. My shift starts in five minutes.",
+                "I swear everything is in order. Please, just this once, don't make me wait.",
+                "Officer, please — I have a sick child at home. Can we speed this up?",
+                "I'll do anything, just don't hold me up. Please.",
+                "I'm late, I'm so late. Please, the papers are all there.",
+                "Don't make me stand here. I've been through this gate a hundred times.",
+                "I'm not hiding anything. I promise. Just let me pass.",
+                "My boss will fire me if I'm late again. Please, officer.",
+                "Please. I can't miss this. Just look at the papers and let me go.",
             };
             return human[rnd.Next(human.Length)];
         }

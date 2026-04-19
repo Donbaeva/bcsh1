@@ -36,7 +36,8 @@ namespace TheGatekeeper
             Panel mainPanel = new Panel
             {
                 Dock = DockStyle.Fill,
-                Padding = new Padding(20)
+                Padding = new Padding(20),
+                AutoScroll = true   // прокрутка если персонажей много
             };
             mainPanel.Paint += (s, pe) =>
             {
@@ -131,6 +132,28 @@ namespace TheGatekeeper
                     ? $"{character.Name,-20}  →  {decisionLabel,-6}  (observer — no check needed)"
                     : $"{character.Name,-20}  →  {decisionLabel,-6}  (actual: {actualType})";
 
+                // Проверяем правильность решения
+                bool correct = decision == "PASS" ||
+                    (decision == "HUMAN" && character.Species == "Human") ||
+                    (decision == "ROBOT" && character.Species == "Robot") ||
+                    (decision == "ALIEN" && character.Species == "Alien");
+
+                string marker = decision == "PASS" ? "  " : (correct ? "✓ " : "✗ ");
+                Color markerColor = decision == "PASS"
+                    ? Color.LightSkyBlue
+                    : (correct ? Color.Lime : Color.Red);
+
+                // Маркер правильности
+                Label markerLbl = new Label
+                {
+                    Text = marker,
+                    Font = new Font("Consolas", 10, FontStyle.Bold),
+                    ForeColor = markerColor,
+                    Location = new Point(20, yPos),
+                    AutoSize = true
+                };
+                mainPanel.Controls.Add(markerLbl);
+
                 Label entry = new Label
                 {
                     Text = entryText,
@@ -140,7 +163,7 @@ namespace TheGatekeeper
                     AutoSize = true
                 };
                 mainPanel.Controls.Add(entry);
-                yPos += 25;
+                yPos += 26;
             }
 
             Label hint = new Label

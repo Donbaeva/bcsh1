@@ -35,8 +35,7 @@ namespace TheGatekeeper
         private Timer glowTimer;
         private int hoveredButton = -1;
 
-        // ─── Туториал ────────────────────────────────────────────────────────
-        private bool _tutorialActive = false;
+        // ─── Туториал — поля объявлены в блоке StartTutorialPhase ────────────
 
         // ════════════════════════════════════════════════════════════════════
         //  ИНИЦИАЛИЗАЦИЯ — вызвать из конструктора Form1 после flashTimer
@@ -237,23 +236,51 @@ namespace TheGatekeeper
             "ДИАЛОГОВЫЙ ЭКРАН\nЗдесь печатается то что говорит субъект.\nНажми — откроется полный лог разговора.",
         };
 
+        // ════════════════════════════════════════════════════════════════
+        //  ТУТОРИАЛ — нарративный
+        // ════════════════════════════════════════════════════════════════
+
+        private static readonly string[] TutorialLines = {
+            "Hey. First day on the job — welcome to Gate Inspection.",
+            "Your task: decide if each subject is HUMAN, ROBOT, or ALIEN.",
+            "Press RED (Robot), BLUE (Alien), or GREEN (Human) to give your verdict.",
+            "Use the SMALL RADIO on the right to question subjects about name, code, purpose.",
+            "Click the screen UNDER THE STICKERS to open the subject document — check every field.",
+            "The DIALOGUE SCREEN below shows what subjects say. Click it to re-read the full log.",
+            "Stickers contain today's access codes and threat signs — read them before each subject.",
+            "3 wrong decisions ends your shift early. Take your time. The pressure clock ticks.",
+            "Ready? Click START SHIFT — or SKIP if you know the drill.",
+        };
+
+        private int _tutorialStep = 0;
+        private bool _tutorialActive = false;
+        private Timer _tutorialTimer;
+
         internal void StartTutorialPhase()
         {
             _tutorialActive = true;
+            _tutorialStep = 0;
             currentCharacterData = null;
             currentCharacter = null;
-
-            lblName.Text = "AWAITING FIRST SUBJECT";
-            lblName.ForeColor = Color.FromArgb(100, 130, 160);
-
-            StartTypingEffect("Click any highlighted zone to learn what it does. Study your equipment before the shift begins.");
+            StartTypingEffect(TutorialLines[0]);
+            _tutorialTimer = new Timer { Interval = 3400 };
+            _tutorialTimer.Tick += (s, e) =>
+            {
+                _tutorialStep++;
+                if (_tutorialStep < TutorialLines.Length)
+                    StartTypingEffect(TutorialLines[_tutorialStep]);
+                else
+                    _tutorialTimer.Stop();
+            };
+            _tutorialTimer.Start();
             Redraw();
         }
 
         private void EndTutorialPhase()
         {
             _tutorialActive = false;
-            lblName.ForeColor = Color.FromArgb(255, 230, 230, 230);
+            _tutorialTimer?.Stop();
+            _tutorialTimer = null;
             LoadCurrentCharacter();
             pressureSeconds = 0;
             pressureTimer.Start();
@@ -262,120 +289,86 @@ namespace TheGatekeeper
 
         internal void HandleTutorialClick(Point p)
         {
-            // Кнопка "START SHIFT"
-            if (ScaleRect(_startShiftZone).Contains(p))
+            if (overlayPanel.Visible) { HideOverlay(); return; }
+
+            if (ScaleRect(new Rectangle(50, 548, 160, 82)).Contains(p) ||
+                ScaleRect(new Rectangle(220, 548, 170, 82)).Contains(p))
             {
                 EndTutorialPhase();
                 return;
             }
 
-            // Закрыть оверлей если открыт
-            if (overlayPanel.Visible) { HideOverlay(); return; }
-
-            // Клик по диалоговому экрану
-            if (ScaleRect(zoneDialogueScreen).Contains(p))
-            {
-                StartTypingEffect(_tutorialHints[10]);
-                return;
-            }
-
-            // Интерактивные зоны — открываем оверлей + показываем подсказку
+            // Клик по любой зоне — показываем оверлей
             for (int i = 0; i < interactiveZones.Length; i++)
+                if (ScaleRect(interactiveZones[i]).Contains(p)) { if (i != 9) ShowOverlay(i); return; }
+
+            // Клик в другом месте — следующая строка
+            _tutorialTimer?.Stop();
+            _tutorialStep++;
+            if (_tutorialStep < TutorialLines.Length)
             {
-                if (ScaleRect(interactiveZones[i]).Contains(p))
-                {
-                    if (i < _tutorialHints.Length)
-                        StartTypingEffect(_tutorialHints[i]);
-
-                    // Допрос (9) в туториале не открываем — нет персонажа
-                    if (i != 9 && i != 10)
-                        ShowOverlay(i);
-
-                    return;
-                }
+                StartTypingEffect(TutorialLines[_tutorialStep]);
+                _tutorialTimer?.Start();
             }
         }
 
         internal void UpdateTutorialHover(Point p)
         {
-            bool onStart = ScaleRect(_startShiftZone).Contains(p);
+            bool onBtn = ScaleRect(new Rectangle(50, 548, 160, 82)).Contains(p) ||
+                         ScaleRect(new Rectangle(220, 548, 170, 82)).Contains(p);
             bool onZone = false;
-
-            if (!onStart)
-            {
-                for (int i = 0; i < interactiveZones.Length; i++)
-                    if (ScaleRect(interactiveZones[i]).Contains(p)) { onZone = true; break; }
-                if (!onZone)
-                    onZone = ScaleRect(zoneDialogueScreen).Contains(p);
-            }
-
-            Cursor = (onStart || onZone) ? Cursors.Hand : Cursors.Default;
+            for (int i = 0; i < interactiveZones.Length; i++)
+                if (ScaleRect(interactiveZones[i]).Contains(p)) { onZone = true; break; }
+            Cursor = (onBtn || onZone) ? Cursors.Hand : Cursors.Default;
             Redraw();
         }
 
-        // Рисуется из Redraw() — вызвать: DrawTutorialUI(g);
         internal void DrawTutorialUI(Graphics g)
         {
             if (!_tutorialActive) return;
 
-            // Яркая подсветка всех интерактивных зон
-            for (int i = 0; i < interactiveZones.Length; i++)
+            // Подсветка зон
+            foreach (var zone in interactiveZones)
             {
-                Rectangle r = ScaleRect(interactiveZones[i]);
-                bool isHovered = (i == hoveredZone);
-
-                // Заливка
-                using (var br = new SolidBrush(Color.FromArgb(isHovered ? 55 : 25, 0, 220, 130)))
+                Rectangle r = ScaleRect(zone);
+                using (var br = new SolidBrush(Color.FromArgb(22, 0, 220, 120)))
                     g.FillRectangle(br, r);
-
-                // Рамка — сплошная, яркая
-                using (var pen = new Pen(
-                    isHovered ? Color.FromArgb(220, 0, 255, 140) : Color.FromArgb(140, 0, 200, 100),
-                    isHovered ? 2f : 1.5f))
-                    g.DrawRectangle(pen, r);
-
-                // Иконка "?" в центре зоны
-                using (var font = new Font("Consolas", Math.Max(7f, Math.Min(r.Height * 0.5f, 11f)), FontStyle.Bold))
-                using (var brush = new SolidBrush(Color.FromArgb(isHovered ? 200 : 100, 0, 220, 120)))
-                {
-                    var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
-                    g.DrawString("?", font, brush, r, sf);
-                }
-            }
-
-            // Диалоговый экран тоже подсвечиваем
-            {
-                Rectangle r = ScaleRect(zoneDialogueScreen);
-                using (var br = new SolidBrush(Color.FromArgb(25, 0, 220, 130)))
-                    g.FillRectangle(br, r);
-                using (var pen = new Pen(Color.FromArgb(140, 0, 200, 100), 1.5f))
+                using (var pen = new Pen(Color.FromArgb(110, 0, 200, 100), 1.5f))
                     g.DrawRectangle(pen, r);
             }
 
-            // Кнопка "START SHIFT"
-            Rectangle zone = ScaleRect(_startShiftZone);
+            // Прогресс-точки
+            int total = TutorialLines.Length;
+            int step = Math.Min(_tutorialStep, total - 1);
+            int dotX = ClientSize.Width / 2 - (total * 14) / 2;
+            int dotY = ScaleRect(zoneDialogueScreen).Top - 18;
+            for (int i = 0; i < total; i++)
+                using (var br = new SolidBrush(i <= step
+                    ? Color.FromArgb(200, 0, 200, 100)
+                    : Color.FromArgb(50, 0, 150, 80)))
+                    g.FillEllipse(br, dotX + i * 14, dotY, 8, 8);
+
+            // SKIP
+            DrawTutBtn(g, new Rectangle(50, 548, 160, 82),
+                "SKIP", Color.FromArgb(80, 40, 40), Color.FromArgb(200, 120, 100));
+            // START SHIFT
+            DrawTutBtn(g, new Rectangle(220, 548, 170, 82),
+                "START SHIFT", Color.FromArgb(10, 50, 20), Color.FromArgb(0, 220, 100));
+        }
+
+        private void DrawTutBtn(Graphics g, Rectangle baseRect, string label, Color bg, Color fg)
+        {
+            Rectangle zone = ScaleRect(baseRect);
             bool hovered = zone.Contains(PointToClient(Cursor.Position));
-
-            using (var br = new SolidBrush(hovered
-                ? Color.FromArgb(220, 20, 65, 30)
-                : Color.FromArgb(180, 10, 45, 20)))
+            using (var br = new SolidBrush(Color.FromArgb(hovered ? 220 : 170, bg)))
                 g.FillRectangle(br, zone);
-
-            using (var pen = new Pen(hovered
-                ? Color.FromArgb(255, 0, 210, 80)
-                : Color.FromArgb(180, 0, 150, 60), hovered ? 2.5f : 1.5f))
+            using (var pen = new Pen(Color.FromArgb(hovered ? 255 : 140, fg), hovered ? 2.5f : 1.5f))
                 g.DrawRectangle(pen, zone);
-
-            string label = hovered ? "► START SHIFT ◄" : "START SHIFT";
-            using (var font = new Font("Consolas", 13, FontStyle.Bold))
-            using (var brush = new SolidBrush(Color.FromArgb(hovered ? 255 : 200, 0, 220, 100)))
+            using (var font = new Font("Consolas", 11, FontStyle.Bold))
+            using (var brush = new SolidBrush(Color.FromArgb(hovered ? 255 : 190, fg)))
             {
-                var sf = new StringFormat
-                {
-                    Alignment = StringAlignment.Center,
-                    LineAlignment = StringAlignment.Center
-                };
-                g.DrawString(label, font, brush, zone, sf);
+                var sf = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
+                g.DrawString(hovered ? $"► {label} ◄" : label, font, brush, zone, sf);
             }
         }
 

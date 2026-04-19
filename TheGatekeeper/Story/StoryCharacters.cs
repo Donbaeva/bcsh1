@@ -67,6 +67,15 @@ namespace TheGatekeeper.Models
     {
         void ApplyEffect(string decision);
         string GetSecretNote();
+        // Вызывается когда персонаж появляется на посту (до решения инспектора)
+        void OnArrival();
+    }
+
+    // ─── Базовый OnArrival (ничего не делает) ───────────────────────────────
+    // Классы которым нужно что-то при появлении — переопределяют
+    public abstract class StoryCharacterBase
+    {
+        public virtual void OnArrival() { } // по умолчанию — ничего
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -88,10 +97,10 @@ namespace TheGatekeeper.Models
     public class Commander_Felicia : ObserverCharacter, IStoryCharacter
     {
         public Commander_Felicia(int day) : base(
-            name: "Commander_Felicia",
+            name: "Commander Felicia",
             dialogue: "Inspector. I am conducting a routine check. Your records are exemplary. Keep it up.",
             idNumber: "GOV-0001-W",
-            occupation: "Commander",
+            occupation: "Council Commissar",
             reason: "Routine Inspection",
             day: day)
         {
@@ -110,6 +119,8 @@ namespace TheGatekeeper.Models
                 EndingTracker.Errors += 1;
             }
         }
+
+        public void OnArrival() { }
 
         public string GetSecretNote() =>
             "[ДОСЬЕ — КОМИССАР ВОЛК]\n" +
@@ -133,7 +144,7 @@ namespace TheGatekeeper.Models
             day: day)
         {
             AccessCode = "MIL-BRAVO";
-            SetPhotoFromFile(@"Images\Characters\story\SergeantCastro.png");
+            SetPhotoFromFile(@"Images\Characters\story\Jack.png");
         }
 
         public void ApplyEffect(string decision)
@@ -146,6 +157,8 @@ namespace TheGatekeeper.Models
                 EndingTracker.Errors += 1;
             }
         }
+
+        public void OnArrival() { }
 
         public string GetSecretNote() =>
             "[ФАЙЛ — КАСТРО]\n" +
@@ -167,18 +180,23 @@ namespace TheGatekeeper.Models
             day: day)
         {
             AccessCode = "GBI-OMEGA";
-            SetPhotoFromFile(@"Images\Characters\story\AgentGrey.png");
+            SetPhotoFromFile(@"Images\Characters\story\Pam.png");
         }
 
         public void ApplyEffect(string decision)
         {
             if (decision == "PASS" || decision == "HUMAN")
             {
-                // Агент Грей следит — если есть подозрения, он их запомнит
                 if (EndingTracker.RebelTrust >= 2) EndingTracker.Caught += 1;
             }
-            else
-                EndingTracker.Caught += 2;
+            else EndingTracker.Caught += 2;
+
+        }
+
+        public void OnArrival()
+        {
+            var f1 = System.Windows.Forms.Application.OpenForms["Form1"] as Form1;
+            f1?.ReceiveDocument(Form1.DocNinasNote(Day));
         }
 
         public string GetSecretNote() =>
@@ -212,11 +230,90 @@ namespace TheGatekeeper.Models
             else { EndingTracker.Errors += 2; EndingTracker.Loyalty -= 2; }
         }
 
+        public void OnArrival()
+        {
+            var f1 = System.Windows.Forms.Application.OpenForms["Form1"] as Form1;
+            f1?.ReceiveDocument(Form1.DocAgentDossier(Day));
+        }
+
         public string GetSecretNote() =>
             "[VIP-ПРОТОКОЛ]\n" +
             "Приоритет: КРИТИЧЕСКИЙ\n\n" +
             "Любая задержка будет немедленно\n" +
             "зафиксирована.";
+    }
+
+    // ─── КОМАНДЕР ФЕЛИСИЯ — финальная инспекция (День 10) ──────────────
+    // Наблюдатель. Приходит с проверкой в последний день.
+    // Решение игрока: передать ли ей секретные документы?
+    public class CommanderFelicia : ObserverCharacter, IStoryCharacter
+    {
+        public bool ReceivedDocuments { get; set; } = false;
+
+        public CommanderFelicia(int day) : base(
+            name: "Commander Felicia",
+            dialogue: "Final shift inspection. Your performance record is being reviewed. " +
+                      "If you have anything to report — now is the time.",
+            idNumber: "CMD-0001-F",
+            occupation: "Colony Commander",
+            reason: "Final Inspection",
+            day: day)
+        {
+            AccessCode = "CMD-ALPHA-FINAL";
+            SetPhotoFromFile(@"Images\Characters\story\Commander_Felicia.png");
+        }
+
+        public void ApplyEffect(string decision)
+        {
+            if (decision == "PASS" || decision == "HUMAN")
+            {
+                EndingTracker.Loyalty += 3;
+                if (ReceivedDocuments) EndingTracker.RebelTrust += 2;
+            }
+        }
+
+        public void OnArrival() { }
+
+        public string GetSecretNote() =>
+            "[ДОСЬЕ — КОМАНДЕР ФЕЛИСИЯ]\n" +
+            "Прямое командование колонией.\n" +
+            "Независима от Комиссара Волка.\n\n" +
+            "Если передать ей документы —\n" +
+            "она примет меры.";
+    }
+
+    // ─── ПРОМЕЖУТОЧНАЯ ПРОВЕРКА (Дни 5-6) — обычный инспектор ──────────
+    public class MidtermInspector : ObserverCharacter, IStoryCharacter
+    {
+        public MidtermInspector(int day) : base(
+            name: "Inspector Rael",
+            dialogue: "Mid-shift audit. Checking compliance across all posts. " +
+                      "Your numbers look... interesting.",
+            idNumber: "INS-5501-R",
+            occupation: "Internal Auditor",
+            reason: "Compliance Check",
+            day: day)
+        {
+            AccessCode = "INS-MIDTERM";
+            SetPhotoFromFile(@"Images\Characters\story\Pam.png");
+        }
+
+        public void ApplyEffect(string decision)
+        {
+            if (decision == "PASS" || decision == "HUMAN")
+            {
+                if (EndingTracker.Errors >= 2) EndingTracker.Caught += 1;
+                else EndingTracker.Loyalty += 1;
+            }
+        }
+
+        public void OnArrival() { }
+
+        public string GetSecretNote() =>
+            "[АУДИТ — ИНСПЕКТОР РАЭЛЬ]\n" +
+            "Отслеживает ошибки по всем постам.\n\n" +
+            "Более 2 ошибок к этому моменту —\n" +
+            "будет зафиксировано.";
     }
 
     // ─── ТОМ АРЧЕР ──────────────────────────────────────────────────────────
@@ -237,6 +334,12 @@ namespace TheGatekeeper.Models
         {
             if (decision == "HUMAN") EndingTracker.Loyalty += 1;
             if (PlayerAskedFollowUp) EndingTracker.RebelTrust += 1;
+        }
+
+        public void OnArrival()
+        {
+            var f1 = System.Windows.Forms.Application.OpenForms["Form1"] as Form1;
+            f1?.ReceiveDocument(Form1.DocFlyer(Day));
         }
 
         public string GetSecretNote() =>
@@ -265,6 +368,13 @@ namespace TheGatekeeper.Models
             if (decision != "HUMAN") { EndingTracker.Errors += 1; return; }
             if (NoteAccepted) EndingTracker.RebelTrust += 2;
             else { EndingTracker.Loyalty += 2; EndingTracker.Caught += 1; }
+
+        }
+
+        public void OnArrival()
+        {
+            var f1 = System.Windows.Forms.Application.OpenForms["Form1"] as Form1;
+            f1?.ReceiveDocument(Form1.DocNinasNote(Day));
         }
 
         public string GetSecretNote() =>
@@ -301,6 +411,12 @@ namespace TheGatekeeper.Models
                 EndingTracker.RebelTrust += 3;
         }
 
+        public void OnArrival()
+        {
+            var f1 = System.Windows.Forms.Application.OpenForms["Form1"] as Form1;
+            f1?.ReceiveDocument(Form1.DocNinasNote(Day));
+        }
+
         public string GetSecretNote() =>
             Mode == MirraMode.Return
                 ? "[ПЕРЕХВАТ]\n'Субъект М подтверждает контакт.\nШлюз 9. 03:00.'"
@@ -329,6 +445,8 @@ namespace TheGatekeeper.Models
             else EndingTracker.Loyalty += 3;
         }
 
+        public void OnArrival() { }
+
         public string GetSecretNote() =>
             "[ПЕРЕХВАТ ГБ]\n" +
             "Субъект связан с Ниной Уорт.\n" +
@@ -348,6 +466,14 @@ namespace TheGatekeeper.Models
         }
 
         public void ApplyEffect(string decision) { EndingTracker.InfectedIn += 1; }
+
+        public void OnArrival()
+        {
+            var f1 = System.Windows.Forms.Application.OpenForms["Form1"] as Form1;
+            if (f1 == null) return;
+            f1.ReceiveDocument(Form1.DocFakeMedCert(Day));
+            f1.ReceiveDocument(Form1.DocBribeEnvelope("Zzarkh", 150, Day));
+        }
 
         public string GetSecretNote() =>
             "[БИОСКАНЕР]\n" +
@@ -369,6 +495,13 @@ namespace TheGatekeeper.Models
 
         public void ApplyEffect(string decision) { EndingTracker.InfectedIn += 1; }
 
+        public void OnArrival()
+        {
+            var f1 = System.Windows.Forms.Application.OpenForms["Form1"] as Form1;
+            if (f1 == null) return;
+            f1.ReceiveDocument(Form1.DocBribeEnvelope("Oliver Kane", 80, Day));
+        }
+
         public string GetSecretNote() =>
             "[БИОСКАНЕР]\n" +
             "Маркер B-7 ПОЛОЖИТЕЛЬНЫЙ.\n\n" +
@@ -389,6 +522,8 @@ namespace TheGatekeeper.Models
         }
 
         public void ApplyEffect(string decision) { EndingTracker.InfectedIn += 2; }
+
+        public void OnArrival() { }
 
         public string GetSecretNote() =>
             "[КРИТИЧЕСКОЕ ПРЕДУПРЕЖДЕНИЕ]\n" +
@@ -413,6 +548,13 @@ namespace TheGatekeeper.Models
         {
             EndingTracker.InfectedIn += 1;
             StoryFlags.HasanReachedLab = true;
+
+        }
+
+        public void OnArrival()
+        {
+            var f1 = System.Windows.Forms.Application.OpenForms["Form1"] as Form1;
+            f1?.ReceiveDocument(Form1.DocHasanFormula(Day));
         }
 
         public string GetSecretNote() =>
@@ -434,7 +576,22 @@ namespace TheGatekeeper.Models
             SetPhotoFromFile(@"Images\Characters\story\Clauddee.png");
         }
 
-        public void ApplyEffect(string decision) { EndingTracker.RobotsPassed += 1; }
+        public void ApplyEffect(string decision)
+        {
+            EndingTracker.RobotsPassed += 1;
+            // Изымаем поддельный мандат как улику
+            if (decision == "ROBOT")
+            {
+                var form1 = System.Windows.Forms.Application.OpenForms["Form1"] as Form1;
+                form1?.ReceiveDocument(Form1.DocServMandate(Day));
+            }
+        }
+
+        public void OnArrival()
+        {
+            var f1 = System.Windows.Forms.Application.OpenForms["Form1"] as Form1;
+            f1?.ReceiveDocument(Form1.DocHasanFormula(Day));
+        }
 
         public string GetSecretNote() =>
             "[ОШИБКА МАНДАТА]\n" +
@@ -460,6 +617,8 @@ namespace TheGatekeeper.Models
         }
 
         public void ApplyEffect(string decision) { EndingTracker.RobotsPassed += 1; }
+
+        public void OnArrival() { }
 
         public string GetSecretNote() =>
             "[АНОМАЛИЯ]\n" +
@@ -489,61 +648,67 @@ namespace TheGatekeeper.Models
             switch (day)
             {
                 case 1:
-                    // CommissarWolf — observer, игрок просто пропускает
-                    // SergeantCastro — observer, патрулирует
+                    // День 1: первый день. CommissarWolf знакомится, Арчер даёт намёки
                     return new List<IStoryCharacter>
                     {
                         new Commander_Felicia(day),
-                        new SergeantCastro(day)
+                        new TomArcher(day)
                     };
                 case 2:
+                    // День 2: Мирра появляется впервые, Кастро патрулирует
                     return new List<IStoryCharacter>
                     {
-                        new TomArcher(day),
+                        new SergeantCastro(day),
                         new Mirra(day, MirraMode.FirstVisit)
                     };
                 case 3:
+                    // День 3: первый заражённый, Нина передаёт записку
                     return new List<IStoryCharacter>
                     {
                         new Zzarkh(day),
-                        new SergeantCastro(day)
+                        new NinaWorth(day)
                     };
                 case 4:
+                    // День 4: Волк снова проверяет, ServeX1 пробует прорваться
                     return new List<IStoryCharacter>
                     {
-                        new NinaWorth(day),
-                        new Commander_Felicia(day)
+                        new Commander_Felicia(day),
+                        new ServCommanderX1(day)
                     };
                 case 5:
+                    // День 5: ПРОМЕЖУТОЧНАЯ ПРОВЕРКА — инспектор Раэль
                     return new List<IStoryCharacter>
                     {
-                        new ServCommanderX1(day),
+                        new MidtermInspector(day),
                         new OliverKane(day)
                     };
                 case 6:
+                    // День 6: второй заражённый, профессор рвётся в лабораторию
                     return new List<IStoryCharacter>
                     {
                         new ZzarkhTwo(day),
                         new ProfessorHasan(day)
                     };
                 case 7:
-                    // AgentGrey — observer, только наблюдает
+                    // День 7: Мирра возвращается с предложением, Агент наблюдает
                     return new List<IStoryCharacter>
                     {
                         new Mirra(day, MirraMode.Return),
                         new AgentGrey(day)
                     };
                 case 8:
+                    // День 8: Зоя — последний шанс присоединиться
                     return new List<IStoryCharacter>
                     {
                         new ZoyaLann(day),
-                        new ServCommanderX1(day)
+                        new SergeantCastro(day)
                     };
                 case 9:
+                    // День 9: Агент усиливает давление, Легион пробует прорваться
                     return new List<IStoryCharacter>
                     {
                         new AgentGrey(day),
-                        new Zzarkh(day)
+                        new ServCommanderX1(day)
                     };
                 default:
                     return Enumerable.Empty<IStoryCharacter>();
@@ -554,11 +719,11 @@ namespace TheGatekeeper.Models
         {
             return new List<Character>
             {
-                new CouncilorPek(10),
-                new AgentGrey(10),
-                new ServLegion(10, 1),
-                new ServLegion(10, 2),
-                new ServLegion(10, 3),
+                (Character)new CommanderFelicia(10),  // Финальная инспекция
+                (Character)new AgentGrey(10),
+                (Character)new ServLegion(10, 1),
+                (Character)new ServLegion(10, 2),
+                (Character)new CouncilorPek(10),
             };
         }
 

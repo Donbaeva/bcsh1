@@ -388,19 +388,43 @@ namespace TheGatekeeper
 
         private bool HasMismatch(string key, string spoken, string docVal)
         {
+            if (string.IsNullOrEmpty(docVal) || docVal == "—") return false;
+
             switch (key)
             {
                 case "code":
-                    return !spoken.Contains(docVal ?? "") && docVal != "—";
+                    // Точное совпадение кода
+                    return !spoken.Contains(docVal);
+
                 case "name":
+                    // Хотя бы одна часть имени упомянута
                     if (currentCharacterData == null) return false;
                     foreach (var p in currentCharacterData.Name.Split(' '))
-                        if (spoken.Contains(p)) return false;
+                        if (p.Length > 2 && spoken.IndexOf(p, StringComparison.OrdinalIgnoreCase) >= 0)
+                            return false;
+                    // Мисматч только у синтетиков на ранних днях
                     return (currentCharacterData is Character.Robot || currentCharacterData is Character.Alien)
-                          && currentCharacterData.Day <= 3;
+                           && currentCharacterData.Day <= 3;
+
+                case "destination":
+                case "origin":
+                case "purpose":
+                case "occupation":
+                    // Если ответ содержит ключевые слова из документа — совпадает
+                    var docWords = docVal.ToLower().Split(new[] { ' ', '-', '/', ',' }, StringSplitOptions.RemoveEmptyEntries);
+                    int matches = 0;
+                    foreach (var w in docWords)
+                        if (w.Length > 3 && spoken.IndexOf(w, StringComparison.OrdinalIgnoreCase) >= 0)
+                            matches++;
+                    // Если хотя бы половина ключевых слов совпала — не мисматч
+                    if (matches >= Math.Max(1, docWords.Length / 2)) return false;
+                    // Мисматч только у синтетиков
+                    bool isSyn = currentCharacterData is Character.Robot || currentCharacterData is Character.Alien;
+                    return isSyn && currentCharacterData?.Day <= 4 && new Random().Next(0, 5) == 0;
+
                 default:
                     bool syn = currentCharacterData is Character.Robot || currentCharacterData is Character.Alien;
-                    return syn && (currentCharacterData?.Day <= 4) && new Random().Next(0, 4) == 0;
+                    return syn && currentCharacterData?.Day <= 4 && new Random().Next(0, 6) == 0;
             }
         }
 

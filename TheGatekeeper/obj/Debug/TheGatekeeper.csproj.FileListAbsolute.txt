@@ -156,3 +156,6 @@ C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\obj\Debug\TheGatekeeper.csproj
 C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\obj\Debug\TheGatek.1874EEC6.Up2Date
 C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\obj\Debug\TheGatekeeper.exe
 C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\obj\Debug\TheGatekeeper.pdb
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\story\Zzarkh.png
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\story\ZzarkhTwo.png
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\story\CommissarWolf.png

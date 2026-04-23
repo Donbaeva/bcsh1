@@ -45,6 +45,7 @@
   </ItemGroup>
   <ItemGroup>
     <!-- ═══ ENTRY POINT ═══ -->
+    <Compile Include="Core\EscapeSystem.cs" />
     <Compile Include="Core\InterrogationSystem.cs" />
     <Compile Include="Core\SecretDocumentSystem.cs" />
     <Compile Include="Program.cs" />
@@ -93,7 +94,6 @@
     </Compile>
     <!-- ═══ UTILS — утилиты ═══ -->
     <Compile Include="Utils\CharacterAI.cs" />
-    <Compile Include="Utils\ToolSystem.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Core\Form1.resx">
@@ -129,16 +129,25 @@
     <Content Include="Images\Background\buttons_green.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="Images\Characters\story\Zzarkh.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="Images\Characters\story\AgentGrey.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Images\Characters\story\Aidai.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="Images\Characters\story\ZzarkhTwo.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="Images\Characters\story\Clauddee.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Images\Characters\story\Commander_Felicia.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Images\Characters\story\CommissarWolf.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Images\Characters\story\Dr_Moon.png">

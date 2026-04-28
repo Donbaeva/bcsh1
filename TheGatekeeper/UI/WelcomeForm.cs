@@ -56,7 +56,7 @@ namespace TheGatekeeper
         private readonly Random rng = new Random(42);
 
         private readonly string[] menuItems =
-            { "START", "GAME MODE", "SAVED", "HOW TO PLAY", "EXIT" };
+            { "START", "GAME MODE", "SAVED", "HOW TO PLAY", "🔊 SOUND", "EXIT" };
 
         // ─── Текущий выбранный режим ─────────────────────────────────────────
         public TheGatekeeper.Models.GameMode SelectedMode { get; private set; }
@@ -83,6 +83,7 @@ namespace TheGatekeeper
             GenerateStars();
             LoadImages();
             InitializeForm();
+            Form1.InitMusic();  // музыка стартует сразу при открытии меню
         }
 
         // ── Stars ─────────────────────────────────────────────────────────────
@@ -319,7 +320,8 @@ namespace TheGatekeeper
             menuPanel.Invalidate();
             if (idx == 0) StartCinematic();
             else if (idx == 1) ToggleMode();
-            else if (idx == 4) Application.Exit();
+            else if (idx == 4) ShowSoundMenu();
+            else if (idx == 5) Application.Exit();
         }
 
         private void ToggleMode()
@@ -699,7 +701,124 @@ namespace TheGatekeeper
             glitchTimer?.Stop();
             imgNormal?.Dispose();
             imgGlitch?.Dispose();
+            Form1.DisposeMusic();   // музыка останавливается только при полном выходе
             base.OnFormClosed(e);
+        }
+
+        private void ShowSoundMenu()
+        {
+            var win = new Form
+            {
+                Size = new Size(320, 190),
+                FormBorderStyle = FormBorderStyle.None,
+                BackColor = Color.FromArgb(10, 14, 20),
+                TopMost = true,
+                ShowInTaskbar = false,
+                StartPosition = FormStartPosition.CenterParent
+            };
+
+            win.Paint += (s, pe) =>
+            {
+                var g = pe.Graphics;
+                using (var pen = new Pen(Color.FromArgb(80, 51, 102, 170), 1))
+                    g.DrawRectangle(pen, 0, 0, win.Width - 1, win.Height - 1);
+                using (var br = new System.Drawing.Drawing2D.LinearGradientBrush(
+                    new Rectangle(0, 0, win.Width, 3),
+                    Color.FromArgb(160, 51, 130, 200), Color.Transparent,
+                    System.Drawing.Drawing2D.LinearGradientMode.Horizontal))
+                    g.FillRectangle(br, 0, 0, win.Width, 3);
+            };
+
+            win.Controls.Add(new Label
+            {
+                Text = "   MUSIC SETTINGS",
+                Location = new Point(14, 12),
+                Size = new Size(260, 22),
+                ForeColor = Color.FromArgb(100, 180, 220),
+                Font = new Font("Consolas", 10, FontStyle.Bold),
+                BackColor = Color.Transparent
+            });
+
+            var btnX = new Button
+            {
+                Text = "×",
+                Location = new Point(win.Width - 34, 6),
+                Size = new Size(26, 26),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.Transparent,
+                ForeColor = Color.FromArgb(160, 80, 80),
+                Font = new Font("Arial", 13, FontStyle.Bold),
+                Cursor = Cursors.Hand
+            };
+            btnX.FlatAppearance.BorderSize = 0;
+            btnX.Click += (s, e) => win.Close();
+            win.Controls.Add(btnX);
+
+            win.Controls.Add(new Label
+            {
+                Location = new Point(14, 36),
+                Size = new Size(290, 1),
+                BackColor = Color.FromArgb(40, 51, 102, 170)
+            });
+
+            // Вкл/Выкл
+            bool isOn = Form1.GetMusicEnabled();
+            var btnToggle = new Button
+            {
+                Text = isOn ? "🔊  ON  — нажми чтобы выключить" : "🔇  OFF — нажми чтобы включить",
+                Location = new Point(14, 46),
+                Size = new Size(290, 36),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = isOn ? Color.FromArgb(10, 38, 22) : Color.FromArgb(30, 14, 14),
+                ForeColor = isOn ? Color.FromArgb(0, 210, 120) : Color.FromArgb(180, 80, 80),
+                Font = new Font("Consolas", 8, FontStyle.Bold),
+                Cursor = Cursors.Hand,
+                TextAlign = ContentAlignment.MiddleLeft,
+                Padding = new Padding(8, 0, 0, 0)
+            };
+            btnToggle.FlatAppearance.BorderColor = Color.FromArgb(30, 51, 102, 170);
+            btnToggle.Click += (s, e) =>
+            {
+                bool nowOn = !Form1.GetMusicEnabled();
+                Form1.SetMusicEnabled(nowOn);
+                btnToggle.Text = nowOn ? "🔊  ON  — нажми чтобы выключить" : "🔇  OFF — нажми чтобы включить";
+                btnToggle.ForeColor = nowOn ? Color.FromArgb(0, 210, 120) : Color.FromArgb(180, 80, 80);
+                btnToggle.BackColor = nowOn ? Color.FromArgb(10, 38, 22) : Color.FromArgb(30, 14, 14);
+            };
+            win.Controls.Add(btnToggle);
+
+            // Метка громкости
+            var lblVol = new Label
+            {
+                Text = "VOLUME:  " + Form1.GetMusicVolume(),
+                Location = new Point(14, 90),
+                Size = new Size(290, 20),
+                ForeColor = Color.FromArgb(100, 160, 200),
+                Font = new Font("Consolas", 9, FontStyle.Bold),
+                BackColor = Color.Transparent
+            };
+            win.Controls.Add(lblVol);
+
+            // Слайдер громкости
+            var slider = new TrackBar
+            {
+                Location = new Point(14, 110),
+                Size = new Size(290, 36),
+                Minimum = 0,
+                Maximum = 100,
+                Value = Form1.GetMusicVolume(),
+                TickFrequency = 10,
+                BackColor = Color.FromArgb(10, 14, 20)
+            };
+            slider.Scroll += (s, e) =>
+            {
+                Form1.SetMusicVolume(slider.Value);
+                lblVol.Text = "VOLUME:  " + slider.Value;
+            };
+            win.Controls.Add(slider);
+
+            win.KeyDown += (s, e) => { if (e.KeyCode == Keys.Escape) win.Close(); };
+            win.ShowDialog(this);
         }
 
         private void ToggleFullscreen()

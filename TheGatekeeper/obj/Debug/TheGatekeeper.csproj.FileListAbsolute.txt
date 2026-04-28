@@ -72,6 +72,7 @@ C:\Users\user\Desktop\TheGatekeeper_Game\TheGatekeeper\TheGatekeeper\bin\Debug\I
 C:\Users\user\Desktop\TheGatekeeper_Game\TheGatekeeper\TheGatekeeper\bin\Debug\Images\Characters\ч12.png
 C:\Users\user\Desktop\TheGatekeeper_Game\TheGatekeeper\TheGatekeeper\bin\Debug\Images\Characters\ч11.png
 C:\Users\user\Desktop\TheGatekeeper_Game\TheGatekeeper\TheGatekeeper\bin\Debug\Images\Characters\ч10.png
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\story\CommissarWolf.png
 C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Background\back_panel.png
 C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Background\buttons_default.png
 C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Background\buttons_blue.png
@@ -80,6 +81,8 @@ C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Background\fr
 C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Background\image_2.png
 C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Background\image_4.png
 C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Background\buttons_green.png
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\story\ZzarkhTwo.png
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\story\Zzarkh.png
 C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\story\AgentGrey.png
 C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\story\Aidai.png
 C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\story\Clauddee.png
@@ -145,9 +148,6 @@ C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\р
 C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\роботы\robot_03.png
 C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\роботы\robot_04.png
 C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\роботы\robot_05.png
-C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\TheGatekeeper.exe.config
-C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\TheGatekeeper.exe
-C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\TheGatekeeper.pdb
 C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Newtonsoft.Json.dll
 C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\obj\Debug\TheGatekeeper.csproj.AssemblyReference.cache
 C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\obj\Debug\TheGatekeeper.Form1.resources
@@ -156,6 +156,7 @@ C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\obj\Debug\TheGatekeeper.csproj
 C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\obj\Debug\TheGatek.1874EEC6.Up2Date
 C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\obj\Debug\TheGatekeeper.exe
 C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\obj\Debug\TheGatekeeper.pdb
-C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\story\Zzarkh.png
-C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\story\ZzarkhTwo.png
-C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Images\Characters\story\CommissarWolf.png
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\TheGatekeeper.exe.config
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\TheGatekeeper.exe
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\TheGatekeeper.pdb
+C:\Users\user\Desktop\TheGateKeeper\TheGatekeeper\bin\Debug\Music\Tin_Choir.mp3

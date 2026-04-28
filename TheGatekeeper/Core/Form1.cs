@@ -617,25 +617,6 @@ namespace TheGatekeeper
                 ScaleControl(c);
             UpdateDialoguePosition(); // позиция диалога — отдельно через ScaleRect
 
-            // Кнопка паузы / меню
-            var btnPause = new Button
-            {
-                Text = "⚙",
-                Location = new Point((int)(1230 * Screen.PrimaryScreen.Bounds.Width / (float)BaseW),
-                                     (int)(8 * Screen.PrimaryScreen.Bounds.Height / (float)BaseH)),
-                Size = new Size((int)(40 * Screen.PrimaryScreen.Bounds.Width / (float)BaseW),
-                                (int)(26 * Screen.PrimaryScreen.Bounds.Height / (float)BaseH)),
-                FlatStyle = FlatStyle.Flat,
-                BackColor = Color.Transparent,
-                ForeColor = Color.FromArgb(140, 160, 180),
-                Font = new Font("Segoe UI", 12),
-                Cursor = Cursors.Hand
-            };
-            btnPause.FlatAppearance.BorderSize = 0;
-            btnPause.Click += (s, e) => ShowPauseMenu();
-            this.Controls.Add(btnPause);
-
-
             this.Controls.AddRange(new Control[]
                 { lblScore, lblDay, lblQuota, lblPressure, lblName, lblDialogue, lblMode });
         }
@@ -1377,31 +1358,27 @@ namespace TheGatekeeper
         private void DrawClock(Graphics g)
         {
             Rectangle zone = ScaleRect(zoneClock);
-            int m = shiftSeconds / 60, s = shiftSeconds % 60;
 
-            // Подсветка при наведении
+            // Только hover-подсветка — текст времени убран
             bool hovered = zone.Contains(PointToClient(Cursor.Position));
             if (hovered)
             {
-                using (var br = new SolidBrush(Color.FromArgb(30, 0, 200, 255)))
+                using (var br = new SolidBrush(Color.FromArgb(40, 0, 200, 255)))
                     g.FillRectangle(br, zone);
-                using (var pen = new Pen(Color.FromArgb(80, 0, 200, 255), 1))
+                using (var pen = new Pen(Color.FromArgb(120, 0, 200, 255), 1))
                     g.DrawRectangle(pen, zone);
-            }
-
-            using (var font = new Font("Consolas", zone.Height * 0.45f, FontStyle.Bold, GraphicsUnit.Pixel))
-            using (var br = new SolidBrush(hovered
-                ? Color.FromArgb(255, 80, 220, 255)
-                : Color.FromArgb(255, 0, 170, 255)))
-            {
-                var sf = new StringFormat
+                // Маленькая иконка ⚙ в центре зоны при наведении
+                using (var font = new Font("Segoe UI", zone.Height * 0.55f, FontStyle.Regular, GraphicsUnit.Pixel))
+                using (var brush = new SolidBrush(Color.FromArgb(180, 80, 200, 255)))
                 {
-                    Alignment = StringAlignment.Center,
-                    LineAlignment = StringAlignment.Center
-                };
-                g.DrawString($"{m:D2}:{s:D2}", font, br, zone, sf);
+                    var sf = new StringFormat
+                    {
+                        Alignment = StringAlignment.Center,
+                        LineAlignment = StringAlignment.Center
+                    };
+                    g.DrawString("⚙", font, brush, zone, sf);
+                }
             }
-
         }
 
 
@@ -1658,6 +1635,9 @@ namespace TheGatekeeper
             Btn("▶  CONTINUE SHIFT", Color.FromArgb(0, 210, 100), Color.FromArgb(8, 38, 16), () => pressureTimer.Start());
             Btn("⏹  END SHIFT EARLY", Color.FromArgb(220, 160, 40), Color.FromArgb(28, 22, 8), () => ShowDaySummary());
             Btn("💾  SAVE", Color.FromArgb(100, 160, 240), Color.FromArgb(8, 18, 38), () => { SaveProgress(); pressureTimer.Start(); });
+            Btn(GetMusicEnabled() ? "🔊  MUSIC  ON" : "🔇  MUSIC  OFF",
+                Color.FromArgb(160, 200, 180), Color.FromArgb(8, 22, 18),
+                () => { ShowSoundSettings(); pressureTimer.Start(); });
             Btn("✕  EXIT", Color.FromArgb(200, 80, 80), Color.FromArgb(28, 8, 8), () => this.Close());
 
             // Подгоняем высоту под контент
@@ -1742,9 +1722,14 @@ namespace TheGatekeeper
                 Color.FromArgb(100, 160, 240), Color.FromArgb(10, 20, 40),
                 () => { SaveProgress(); pressureTimer.Start(); });
 
-            AddMenuBtn("🔊  SOUND  (placeholder)",
-                Color.FromArgb(160, 160, 180), Color.FromArgb(14, 14, 24),
-                () => { pressureTimer.Start(); });
+            // ── Кнопка звука — открывает панель управления музыкой ──
+            AddMenuBtn(GetMusicEnabled() ? "🔊  MUSIC  ON" : "🔇  MUSIC  OFF",
+                Color.FromArgb(160, 200, 180), Color.FromArgb(10, 22, 18),
+                () =>
+                {
+                    ShowSoundSettings();
+                    pressureTimer.Start();
+                });
 
             AddMenuBtn("✕  EXIT TO MENU",
                 Color.FromArgb(200, 80, 80), Color.FromArgb(28, 10, 10),
@@ -1783,6 +1768,134 @@ namespace TheGatekeeper
             {
                 StartTypingEffect($"Save failed: {ex.Message}");
             }
+        }
+
+        // ─── Меню настройки звука ────────────────────────────────────────────
+        private void ShowSoundSettings()
+        {
+            var win = new Form
+            {
+                Text = "SOUND SETTINGS",
+                Size = new Size(320, 200),
+                FormBorderStyle = FormBorderStyle.None,
+                BackColor = Color.FromArgb(10, 14, 20),
+                TopMost = true,
+                ShowInTaskbar = false,
+                StartPosition = FormStartPosition.CenterParent
+            };
+
+            win.Paint += (s, pe) =>
+            {
+                var g = pe.Graphics;
+                using (var pen = new Pen(Color.FromArgb(80, 51, 102, 170), 1))
+                    g.DrawRectangle(pen, 0, 0, win.Width - 1, win.Height - 1);
+                using (var br = new System.Drawing.Drawing2D.LinearGradientBrush(
+                    new Rectangle(0, 0, win.Width, 3),
+                    Color.FromArgb(160, 51, 130, 200), Color.Transparent,
+                    System.Drawing.Drawing2D.LinearGradientMode.Horizontal))
+                    g.FillRectangle(br, 0, 0, win.Width, 3);
+            };
+
+            // Title
+            win.Controls.Add(new Label
+            {
+                Text = "  🔊  MUSIC SETTINGS",
+                Location = new Point(14, 12),
+                Size = new Size(260, 22),
+                ForeColor = Color.FromArgb(100, 180, 220),
+                Font = new Font("Consolas", 10, FontStyle.Bold),
+                BackColor = Color.Transparent
+            });
+
+            // Close button
+            var btnClose = new Button
+            {
+                Text = "×",
+                Location = new Point(win.Width - 34, 6),
+                Size = new Size(26, 26),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.Transparent,
+                ForeColor = Color.FromArgb(160, 80, 80),
+                Font = new Font("Arial", 13, FontStyle.Bold),
+                Cursor = Cursors.Hand
+            };
+            btnClose.FlatAppearance.BorderSize = 0;
+            btnClose.Click += (s, e) => win.Close();
+            win.Controls.Add(btnClose);
+
+            // Divider
+            win.Controls.Add(new Label
+            {
+                Location = new Point(14, 36),
+                Size = new Size(290, 1),
+                BackColor = Color.FromArgb(40, 51, 102, 170)
+            });
+
+            // Toggle on/off
+            bool isOn = GetMusicEnabled();
+            var btnToggle = new Button
+            {
+                Text = isOn ? "🔊  ON  — click to mute" : "🔇  OFF — click to enable",
+                Location = new Point(14, 46),
+                Size = new Size(290, 36),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = isOn ? Color.FromArgb(10, 38, 22) : Color.FromArgb(30, 14, 14),
+                ForeColor = isOn ? Color.FromArgb(0, 210, 120) : Color.FromArgb(180, 80, 80),
+                Font = new Font("Consolas", 9, FontStyle.Bold),
+                Cursor = Cursors.Hand,
+                TextAlign = ContentAlignment.MiddleLeft,
+                Padding = new Padding(10, 0, 0, 0)
+            };
+            btnToggle.FlatAppearance.BorderColor = Color.FromArgb(30, 51, 102, 170);
+            btnToggle.Click += (s, e) =>
+            {
+                bool nowOn = !GetMusicEnabled();
+                SetMusicEnabled(nowOn);
+                btnToggle.Text = nowOn ? "🔊  ON  — click to mute" : "🔇  OFF — click to enable";
+                btnToggle.ForeColor = nowOn ? Color.FromArgb(0, 210, 120) : Color.FromArgb(180, 80, 80);
+                btnToggle.BackColor = nowOn ? Color.FromArgb(10, 38, 22) : Color.FromArgb(30, 14, 14);
+            };
+            win.Controls.Add(btnToggle);
+
+            // Volume label
+            var lblVol = new Label
+            {
+                Text = $"VOLUME:  {GetMusicVolume()}",
+                Location = new Point(14, 94),
+                Size = new Size(290, 20),
+                ForeColor = Color.FromArgb(100, 160, 200),
+                Font = new Font("Consolas", 9, FontStyle.Bold),
+                BackColor = Color.Transparent
+            };
+            win.Controls.Add(lblVol);
+
+            // Volume slider
+            var slider = new TrackBar
+            {
+                Location = new Point(14, 114),
+                Size = new Size(290, 36),
+                Minimum = 0,
+                Maximum = 100,
+                Value = GetMusicVolume(),
+                TickFrequency = 10,
+                BackColor = Color.FromArgb(10, 14, 20)
+            };
+            slider.Scroll += (s, e) =>
+            {
+                SetMusicVolume(slider.Value);
+                lblVol.Text = $"VOLUME:  {slider.Value}";
+            };
+            win.Controls.Add(slider);
+
+            win.KeyDown += (s, e) => { if (e.KeyCode == Keys.Escape) win.Close(); };
+            win.ShowDialog(this);
+        }
+
+        // ─── Release resources on close ──────────────────────────────────────
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            // Music keeps playing after Form1 closes — disposed only when WelcomeForm exits.
+            base.OnFormClosing(e);
         }
 
     }

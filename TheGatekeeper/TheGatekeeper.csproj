@@ -46,6 +46,9 @@
   <ItemGroup>
     <!-- ═══ ENTRY POINT ═══ -->
     <Compile Include="Core\EscapeSystem.cs" />
+    <Compile Include="Core\Form1_Audio.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Core\InterrogationSystem.cs" />
     <Compile Include="Core\SecretDocumentSystem.cs" />
     <Compile Include="Program.cs" />
@@ -129,6 +132,9 @@
     <Content Include="Images\Background\buttons_green.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="Images\Characters\story\ZzarkhTwo.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="Images\Characters\story\Zzarkh.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
@@ -136,9 +142,6 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Images\Characters\story\Aidai.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Images\Characters\story\ZzarkhTwo.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Images\Characters\story\Clauddee.png">
@@ -331,6 +334,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Images\Characters\роботы\robot_05.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Music\Tin_Choir.mp3">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
